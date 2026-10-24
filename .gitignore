@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+venv*/
+*.log
+engineer_settings.json
+# big or personal things that live outside the code
+Engineer1/
+Strategist/
+llm/
+asr/
+schedules/
+cache/
+*.ibt
+*.wav
+*.gguf
+*.onnx
+Trackside/
+shots/*.wav
+dist/

@@ -1,0 +1,75 @@
+name: Report a problem
+description: Something went wrong, sounded wrong, or said the wrong thing. Tell us and we'll look at it.
+title: "[Beta] "
+labels: ["beta report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing. Reports are read in batches, so you may not hear back straight away. Everyone's report gets read.
+        **Please don't post personal info** (real name, email, iRacing password, anything private).
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part?
+      options:
+        - Race engineer (radio calls)
+        - Strategist (fuel, plans, formation lap rundown, practice run plan)
+        - Spotter
+        - Pit crew (pit menu changes)
+        - Lap analysis / track map
+        - Series prep / schedule / weather
+        - iPad app
+        - Team room
+        - Install / starting the app
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: session
+    attributes:
+      label: When did it happen?
+      options:
+        - Practice
+        - Qualifying
+        - Race
+        - Formation lap
+        - In the pits
+        - Not in a session
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Plain words are perfect. If the radio said something wrong, write what it said.
+      placeholder: "On lap 12 she said I had 3 laps of fuel but I had 8."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+  - type: input
+    id: cartrack
+    attributes:
+      label: Car and track
+      placeholder: "BMW M Hybrid V8 at Le Mans"
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown at the bottom of the settings page.
+      placeholder: "v59"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log file (optional, really helps)
+      description: Drag `engineer.log` from the app folder into this box. Telemetry files (.ibt) are welcome too if you zip them.
+  - type: checkboxes
+    id: ok
+    attributes:
+      label: One more thing
+      options:
+        - label: I didn't put any personal info in this report.
+          required: true
