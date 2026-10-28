@@ -20,7 +20,7 @@
   const VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   const FS = `
 precision highp float;
-uniform vec2 uRes; uniform float uTime, uSpd, uMix, uAgeA, uAgeB, uKA, uKB, uTexOn;
+uniform vec2 uRes, uG; uniform float uTime, uSpd, uMix, uAgeA, uAgeB, uKA, uKB, uTexOn;
 uniform vec3 uA1, uA2, uB1, uB2; uniform sampler2D uTex;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
@@ -160,9 +160,15 @@ vec3 scene(float k,vec3 c1,vec3 c2,float age,vec2 uv,vec2 p,float t){
 
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes;vec2 p=(gl_FragCoord.xy-.5*uRes)/uRes.y;float t=uTime;
+  /* 2026-10-28 (#484): the car's g pushes the scene - it slides and leans against the turn, dips under braking and
+     squats back under power, a touch of zoom with the load (uG = smoothed lateral, longitudinal g, scaled to ~1 at 3 g) */
+  float gl=length(uG);float ga=-uG.x*.10;mat2 gr=mat2(cos(ga),-sin(ga),sin(ga),cos(ga));
+  p=gr*(p+vec2(uG.x*.07,uG.y*.05))*(1.-gl*.05);uv+=vec2(uG.x*.07*uRes.y/uRes.x,uG.y*.05);
   vec3 col=scene(uKB,uB1,uB2,uAgeB,uv,p,t);
   if(uMix<.999){vec3 ca=scene(uKA,uA1,uA2,uAgeA,uv,p,t);col=mix(ca,col,smoothstep(0.,1.,uMix));}
   col*=1.-.42*pow(length((uv-.5)*vec2(1.05,1.25)),2.2);                     /* vignette */
+  if(gl>.01){vec2 e=normalize(uG+1e-5);float edge=pow(max(0.,dot((gl_FragCoord.xy/uRes-.5)*2.,-e)),3.);
+    col+=mix(uB1,vec3(1.),.35)*edge*gl*.22;}                                  /* the load builds light on the outside */
   col+=(h21(gl_FragCoord.xy+fract(t*7.)*100.)-.5)*.018;                      /* living film grain */
   gl_FragColor=vec4(pow(max(col,0.),vec3(.95)),1.);
 }`;
@@ -176,7 +182,7 @@ void main(){
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  const U = {}; for (const n of ["uRes", "uTime", "uSpd", "uMix", "uAgeA", "uAgeB", "uKA", "uKB", "uTexOn", "uA1", "uA2", "uB1", "uB2", "uTex"]) U[n] = gl.getUniformLocation(pr, n);
+  const U = {}; for (const n of ["uRes", "uG", "uTime", "uSpd", "uMix", "uAgeA", "uAgeB", "uKA", "uKB", "uTexOn", "uA1", "uA2", "uB1", "uB2", "uTex"]) U[n] = gl.getUniformLocation(pr, n);
 
   // the user's PlayStation star picture (served by the PC from Grandstand's corner_logos; optional)
   const tex = gl.createTexture(); let texOn = 0;
@@ -198,7 +204,7 @@ void main(){
 
   // the scene state: B = now, A = the one fading out
   const CAP = Math.max(0.2, Math.min(1, parseFloat(new URLSearchParams(location.search).get("gfx")) || 1));   // ?gfx=0.5 caps the resolution
-  const S = { A: null, B: null, mix: 1, t0: performance.now(), scale: CAP, slow: 0, fast: 0, last: 0, spd: 0 };
+  const S = { gx: 0, gy: 0, A: null, B: null, mix: 1, t0: performance.now(), scale: CAP, slow: 0, fast: 0, last: 0, spd: 0 };
   function sceneFor(p, bg) {
     if (p && p.name) {
       let h = 0; for (const ch of String(p.name)) h = (h * 31 + ch.charCodeAt(0)) % 360;
@@ -216,6 +222,8 @@ void main(){
       if (!S.B) { S.B = s; S.A = s; S.mix = 1; return; }
       S.A = S.B; S.B = s; S.mix = 0;
     },
+    // #484: lateral / longitudinal g from the car (null = none: drifts back to rest)
+    g(lat, lon) { S.gx = isFinite(lat) && lat !== null ? Math.max(-3, Math.min(3, lat)) / 3 : 0; S.gy = isFinite(lon) && lon !== null ? Math.max(-3, Math.min(3, lon)) / 3 : 0; },
     speed(kmh) { if (typeof kmh === "number" && isFinite(kmh)) S.spd = Math.max(0, Math.min(1, kmh / 320)); },
   };
   document.body.classList.add("bgfx");
@@ -227,7 +235,8 @@ void main(){
   }
   addEventListener("resize", resize);
 
-  let spdS = 0;
+  let spdS = 0, gxS = 0, gyS = 0;
+  const still = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   function frame(now) {
     requestAnimationFrame(frame);
     if (document.hidden) return;
@@ -244,6 +253,9 @@ void main(){
     gl.uniform2f(U.uRes, cv.width, cv.height);
     gl.uniform1f(U.uTime, ((now - S.t0) / 1000) % 3600);
     gl.uniform1f(U.uSpd, spdS);
+    // critically-damped-ish follow: quick enough to feel each corner, never twitchy
+    const kg = Math.min(1, dt / 220); gxS += ((still ? 0 : S.gx) - gxS) * kg; gyS += ((still ? 0 : S.gy) - gyS) * kg;
+    gl.uniform2f(U.uG, gxS, gyS);
     gl.uniform1f(U.uMix, S.mix);
     gl.uniform1f(U.uKA, S.A.k); gl.uniform1f(U.uKB, S.B.k);
     gl.uniform1f(U.uAgeA, (now - S.A.start) / 1000); gl.uniform1f(U.uAgeB, (now - S.B.start) / 1000);

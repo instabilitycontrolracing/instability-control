@@ -215,6 +215,8 @@ body.ready .card { animation: cardIn .8s var(--ease-out) forwards; animation-del
 .spd { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--rule); min-width: 120px; justify-content: center;
   font: 500 34px/1 var(--num); color: var(--ivory); }
 .spd small { font: 600 9.5px Inter; color: var(--t3); letter-spacing: .18em; }
+/* 2026-10-28 (#484): throttle + brake trace, last 8 s, right under the speed */
+.ptrace { display: block; width: 100%; max-width: 260px; height: 34px; margin-top: 8px; }
 .pcol { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; justify-content: flex-end; }
 .pv { font: 500 17px/1 var(--num); color: var(--ivory); min-width: 3ch; text-align: center; }
 .pbar { position: relative; width: 8px; flex: 1; max-height: 300px; min-height: 70px; border-radius: 1px; background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); overflow: visible; }
@@ -645,6 +647,7 @@ body.tmmode #timing { display: block; }
           </div>
           <div class="gear" id="gear"><span>N</span></div>
           <div class="spd"><span id="spd">0</span><small id="spdU">KM/H</small></div>
+          <canvas class="ptrace" id="ptrace" aria-label="Throttle and brake, last 8 seconds"></canvas>
         </div>
         <div class="pcol"><span class="pv" id="thrV">0</span><div class="pbar pthr"><b id="thr"></b></div><span class="u">THR</span></div>
       </div>

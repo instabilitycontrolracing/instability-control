@@ -294,6 +294,8 @@ function renderT() {
   // drive
   setText("spd", isNum(t.spd) ? t.spd : "–");
   if (window.BGFX && isNum(t.spd)) BGFX.speed(t.met === false ? t.spd * 1.609 : t.spd); setText("spdU", t.met === false ? "MPH" : "KM/H");
+  if (window.BGFX && BGFX.g) BGFX.g(t.glat, t.glon);                       // #484: the backdrop moves with the car's g
+  pedalTrace(t);
   gear(t.gear);
   // timers + delta
   setText("lapN", t.form ? "· formation" : isNum(t.lap) ? t.lap : ""); setText("lapN2", t.form ? "FORMATION" : isNum(t.lap) ? t.lap : "–");
@@ -821,3 +823,29 @@ wireListen();
 kick();
 intro();
 connect();
+
+/* ================================================================ throttle + brake trace under the speed (2026-10-28, #484)
+   The last 8 seconds, newest on the right: throttle green, brake red (the pedal bars' colours). Drawn only when a new
+   sample arrives (10 a second), on a canvas sized once to its box. */
+const PT = { s: [], w: 0, h: 0 };
+function pedalTrace(t) {
+  const cv = el("ptrace"); if (!cv) return;
+  const now = performance.now();
+  if (isNum(t.thr) || isNum(t.brk)) PT.s.push([now, isNum(t.thr) ? t.thr : 0, isNum(t.brk) ? t.brk : 0]);
+  while (PT.s.length && now - PT.s[0][0] > 8000) PT.s.shift();
+  const dpr = Math.min(window.devicePixelRatio || 1, 3), W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr);
+  if (!W || !H) return;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const c = cv.getContext("2d"); c.clearRect(0, 0, W, H);
+  c.fillStyle = "rgba(255,255,255,.04)"; c.fillRect(0, 0, W, H);
+  c.fillStyle = "rgba(255,255,255,.10)"; c.fillRect(0, Math.round(H / 2), W, Math.max(1, dpr * 0.5));
+  if (PT.s.length < 2) return;
+  const x = (tm) => W - ((now - tm) / 8000) * W, pad = 2 * dpr, y = (v) => H - pad - v * (H - 2 * pad);
+  for (const [i, col, fill] of [[1, "#45E58F", "rgba(69,229,143,.14)"], [2, "#FF4D5E", "rgba(255,77,94,.16)"]]) {
+    c.beginPath(); c.moveTo(x(PT.s[0][0]), H);
+    for (const p of PT.s) c.lineTo(x(p[0]), y(p[i]));
+    c.lineTo(x(PT.s[PT.s.length - 1][0]), H); c.closePath(); c.fillStyle = fill; c.fill();
+    c.beginPath(); PT.s.forEach((p, k) => (k ? c.lineTo(x(p[0]), y(p[i])) : c.moveTo(x(p[0]), y(p[i]))));
+    c.strokeStyle = col; c.lineWidth = 1.6 * dpr; c.lineJoin = "round"; c.stroke();
+  }
+}

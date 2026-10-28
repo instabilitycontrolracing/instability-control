@@ -25,6 +25,14 @@ def lan_ip():
         return "127.0.0.1"
 
 
+def _g(v):
+    """m/s^2 -> g (3 decimals), None when missing."""
+    try:
+        return round(float(v) / 9.80665, 3) if v is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 class Remote:
     def __init__(self, api, port=8770, token="", log=print):
         self.api, self.port, self.token, self.log = api, port, token, log
@@ -422,7 +430,9 @@ class Remote:
         out = {
             "on": bool(g("IsOnTrack", False)) or bool(lv.get("replay")), "pit": bool(g("OnPitRoad", False)), "met": met,
             "spd": round((g("Speed", 0) or 0) * (3.6 if met else 2.23694)), "gear": g("Gear", 0), "rpm": round(g("RPM", 0) or 0),
-            "thr": round(g("Throttle", 0) or 0, 3), "brk": round(g("Brake", 0) or 0, 3), "steer": round(g("SteeringWheelAngle", 0) or 0, 3),
+            "thr": round(g("Throttle", 0) or 0, 3), "brk": round(g("Brake", 0) or 0, 3),
+            # 2026-10-28 (#484): lateral / longitudinal g for the iPad's background (None when iRacing doesn't send them)
+            "glat": _g(g("LatAccel")), "glon": _g(g("LongAccel")), "steer": round(g("SteeringWheelAngle", 0) or 0, 3),
             "lap": (g("LapCompleted", 0) or 0) + 1, "cur": r(g("LapCurrentLapTime"), 3), "last": r(g("LapLastLapTime"), 3),
             "best": r(g("LapBestLapTime"), 3), "delta": round(dlt, 3) if dlt is not None else None,
             "pct": round(g("LapDistPct", 0) or 0, 4), "me": me, "my_class": cid,
