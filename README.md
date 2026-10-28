@@ -56,7 +56,9 @@ Only one voice talks at a time. The spotter always goes first, and nobody talks 
 |---|---|
 | <img src="docs/screenshots/coach.png" alt="Driving coach"> **Driving coach**: where the time is and how to find it | <img src="docs/screenshots/team.png" alt="Team and race memory"> **Team**: race memory, meetings and debriefs |
 | <img src="docs/screenshots/analysis.png" alt="Lap analysis"> **Lap analysis**: track map and traces | <img src="docs/screenshots/settings_calls.png" alt="Settings"> **Settings**: choose what it tells you |
+<!-- iPad screenshots to come (they need a live PC link to render):
 | <img src="docs/screenshots/ipad.png" alt="iPad pit wall"> **iPad pit wall**: everything at a glance next to the rig | <img src="docs/screenshots/ipad_laps.png" alt="iPad lap analysis"> **iPad lap analysis**: drag a finger across a corner to study it |
+-->
 
 <sub>Screenshots are from the app's preview mode with sample data.</sub>
 
