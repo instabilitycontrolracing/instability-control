@@ -128,6 +128,11 @@ class Engine:
             return
         self._set_status({"state": "waiting"})
         self.log("Engineer on. Waiting for iRacing...")
+        try:   # 2026-10-28 (#499): Xbox-style controller as a replay remote (never while driving)
+            from . import replay_remote
+            self._remote = replay_remote.start(src.ir, log=self.log)
+        except Exception as e:
+            self.log(f"[replay remote] {e!r}")
         last_status = 0
         while self.running:
             try:
