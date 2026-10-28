@@ -392,6 +392,20 @@ select option { background: #0D1424; }
 .su-card.tech { box-shadow: inset 3px 0 0 var(--gold); }
 .su-card.fix { box-shadow: inset 3px 0 0 var(--blue2), 0 14px 40px rgba(0,0,0,.3); }
 .su-card .lbl { margin-bottom: 8px; }
+/* 2026-10-28 (#491): style setup sheet */
+.su-card.style { box-shadow: inset 3px 0 0 #A78BFA; }
+.su-traits { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.su-trait { padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.su-trait b { display: block; font: 700 15px Inter; color: var(--ivory); margin-bottom: 4px; }
+.su-trait span, .su-chg .why, .su-chg .sty { font: 500 13px/1.5 Inter; color: var(--t3); }
+.su-chg { padding: 14px 0; border-top: 1px solid rgba(255,255,255,.06); }
+.su-chg:first-of-type { border-top: 0; }
+.su-chg .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 12px; background: var(--gold); color: #111; font: 700 12px Inter; margin-right: 10px; }
+.su-chg .t { font: 700 16px Inter; color: var(--ivory); }
+.su-chg .now { font: 600 12px Inter; color: var(--gold); margin-left: 8px; }
+.su-chg .whr { font: 500 12.5px Inter; color: var(--t3); margin: 4px 0 0 34px; }
+.su-chg .why, .su-chg .sty { display: block; margin: 4px 0 0 34px; }
+.su-chg .sty { color: #C4B5FD; }
 .su-card p { margin: 6px 0; font: 500 15px/1.55 Inter; color: var(--ivory); }
 .su-change { font: 800 34px/1.1 Barlow; letter-spacing: .01em; color: var(--ivory); margin: 4px 0 10px; }
 .su-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
@@ -894,6 +908,7 @@ body.idle *, body.idle *::before, body.idle *::after { animation-play-state: pau
         <div class="seg su-car" id="suCar"><div class="ink"></div><button data-k="gt3">GT3</button><button data-k="gtp">GTP</button><button data-k="other">Other</button></div>
         <div class="seg su-cond" id="suCond"><div class="ink"></div><button data-k="dry">Dry</button><button data-k="wet">Wet</button></div>
         <span class="su-src" id="suSrc"></span>
+        <button class="btn sm gold" id="suStyle" title="Reads your telemetry for this car and builds a setup around how you drive">My style</button>
         <button class="btn sm" id="suRestart">Restart</button>
       </div>
       <div class="su-detect" id="suDetect"></div>

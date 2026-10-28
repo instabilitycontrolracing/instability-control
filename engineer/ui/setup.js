@@ -8,6 +8,7 @@ async function suOpen() {
   if (!SU.inited) {
     SU.inited = true;
     suEl("suRestart").addEventListener("click", () => suArea());
+    suEl("suStyle").addEventListener("click", suStyle);
     document.querySelectorAll("#suCar button").forEach((b) => b.addEventListener("click", () => suLoad(b.dataset.k)));
     document.querySelectorAll("#suCond button").forEach((b) => b.addEventListener("click", () => { SU.cond = b.dataset.k; suSeg("suCond", SU.cond); if (SU.prob) suResult(); }));
     await suLoad(null);
@@ -106,3 +107,24 @@ function suResult() {
   on("suWorse", () => { SU.step++; suResult(); toast("Put it back"); });
 }
 window.suOpen = suOpen;
+
+/* 2026-10-28 (#491): "My style" - a setup built around how you drive (style_setup.py: measured from your own telemetry
+   for this car across your recent sessions; no AI, every number is yours) */
+async function suStyle() {
+  suShow(`<div class="su-q">Your style setup<small>Reading your recent sessions in this car…</small></div>`);
+  let d = null;
+  try { d = await api.style_setup(); } catch (e) {}
+  if (!d || !d.ok) {
+    const el = suShow(`<button class="su-back">‹ Back</button><div class="su-q">Your style setup</div>
+      <div class="su-card tech"><p>${suEsc((d && d.why) || "Couldn't read your telemetry.")}</p></div>`);
+    el.querySelector(".su-back").addEventListener("click", suArea); return;
+  }
+  const trk = [...new Set(d.sessions.map((x) => x.track))].join(", ");
+  let h = `<button class="su-back">‹ Back</button><div class="su-q">Your style setup<small>${suEsc(d.car)} · ${d.sessions.length} session(s) · ${suEsc(trk)}</small></div>`;
+  if (d.traits.length) h += `<div class="su-card style"><div class="lbl">How you drive</div><div class="su-traits">${d.traits.map((t) => `<div class="su-trait"><b>${suEsc(t.label)}</b><span>${suEsc(t.detail)}</span></div>`).join("")}</div></div>`;
+  if (d.weak.length) h += `<div class="su-card tech"><div class="lbl">What keeps happening</div>${d.weak.map((w) => `<p><b>${suEsc(w.label)}</b> · ${Math.round(w.rate * 100)}% of corners (${w.n}/${w.of}) · ${suEsc(w.corners.slice(0, 3).join(", "))}</p>`).join("")}</div>`;
+  if (d.changes.length) h += `<div class="su-card fix"><div class="lbl">Your setup, in this order</div>${d.changes.map((c, i) => `<div class="su-chg"><span class="n">${i + 1}</span><span class="t">${suEsc(c.t)}</span>${c.now ? `<span class="now">now ${suEsc(c.now)}</span>` : ""}
+      ${c.where ? `<div class="whr">${suEsc(c.where)}</div>` : ""}<span class="why">${suEsc(c.why)} ${suEsc(c.rule)}</span>${c.style ? `<span class="sty">Your style: ${suEsc(c.style)}</span>` : ""}</div>`).join("")}</div>`;
+  h += `<div class="su-card"><div class="lbl">Mechanic</div>${d.notes.map((n) => `<p>${suEsc(n)}</p>`).join("")}</div>`;
+  suShow(h).querySelector(".su-back").addEventListener("click", suArea);
+}

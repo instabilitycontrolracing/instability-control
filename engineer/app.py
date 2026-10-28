@@ -2305,6 +2305,15 @@ class Api:
                        detected=detected(se) if k == auto else [])
         return out
 
+    def style_setup(self, car_path=None):
+        """2026-10-28 (#491): a setup built around how you drive (style_setup.py), for the car of your newest recording."""
+        from .style_setup import build
+        try:
+            return build(car_path, log=self._log)
+        except Exception as e:
+            self._log(f"[style setup] {e!r}")
+            return {"ok": False, "why": "Couldn't read your telemetry."}
+
     def toggle_max(self):
         if not self._win:
             return
