@@ -1,0 +1,25 @@
+{
+ "Track": "Hockenheimring Baden-Württemberg - Porsche Experience Center - West",
+ "Match": [
+  "hockenheim pec pecwest"
+ ],
+ "LengthMeters": 955,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://de.wikipedia.org/wiki/Hockenheimring_Baden-Württemberg",
+  "CrewChief trackLandmarksData (hockenheim pec pecwest)"
+ ],
+ "Stands": [
+  {
+   "Name": "LBBW Haupttribüne (main grandstand)",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

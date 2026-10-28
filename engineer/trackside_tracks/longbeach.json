@@ -1,0 +1,62 @@
+{
+ "Track": "Long Beach Street Circuit",
+ "Match": [
+  "longbeach"
+ ],
+ "LengthMeters": 3144,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.fanamp.com/tr/indycar-grand-prix-of-long-beach-seating-guide",
+  "https://www.speedhunters.com/?p=372144",
+  "CrewChief trackLandmarksData (longbeach)"
+ ],
+ "Stands": [
+  {
+   "Name": "Grandstands 5-7",
+   "From": 0.486,
+   "To": 0.522,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 16 & 18",
+   "From": 0.827,
+   "To": 0.865,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 24-26",
+   "From": 0.868,
+   "To": 0.895,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 36 & 40",
+   "From": 0.216,
+   "To": 0.242,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Convention Center (elevated viewing)",
+   "From": 0.525,
+   "To": 0.552,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

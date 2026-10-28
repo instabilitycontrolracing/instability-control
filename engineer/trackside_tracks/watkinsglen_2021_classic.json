@@ -1,0 +1,25 @@
+{
+ "Track": "Watkins Glen International - Classic",
+ "Match": [
+  "watkinsglen 2021 classic"
+ ],
+ "LengthMeters": 3882,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://en.wikipedia.org/wiki/Watkins_Glen_International",
+  "CrewChief trackLandmarksData (watkinsglen 2021 classic)"
+ ],
+ "Stands": [
+  {
+   "Name": "Front-stretch grandstand",
+   "From": 0.929,
+   "To": 0.068,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

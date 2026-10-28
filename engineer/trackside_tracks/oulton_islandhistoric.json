@@ -1,0 +1,70 @@
+{
+ "Track": "Oulton Park - Island Historic",
+ "Match": [
+  "oulton islandhistoric"
+ ],
+ "LengthMeters": 3531,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://oversteer48.com/oulton-park-grandstands/",
+  "CrewChief trackLandmarksData (oulton islandhistoric)"
+ ],
+ "Stands": [
+  {
+   "Name": "Old Hall grandstand",
+   "From": 0.037,
+   "To": 0.088,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Knickerbrook grandstand (largest)",
+   "From": 0.545,
+   "To": 0.578,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Lodge grandstand",
+   "From": 0.884,
+   "To": 0.916,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Cascades / Hislop's banking",
+   "From": 0.174,
+   "To": 0.239,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Knickerbrook banking",
+   "From": 0.545,
+   "To": 0.578,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Druids infield (woods)",
+   "From": 0.718,
+   "To": 0.78,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

@@ -1,0 +1,106 @@
+{
+ "Track": "Silverstone Circuit",
+ "Match": [
+  "silverstone 2019 gp"
+ ],
+ "LengthMeters": 5796,
+ "PaAt": 0.0,
+ "Notes": "First pass (2026-10-28): stand positions from the official grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Sides are a best guess where the guides don't say - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "grandprixgrandtours.com/silverstone-circuit-guide",
+  "CrewChief trackLandmarksData (silverstone 2019 gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "International Pit Straight",
+   "From": 0.985,
+   "To": 0.04,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Abbey",
+   "From": 0.04,
+   "To": 0.095,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "The View, Farm Curve, Village",
+   "From": 0.1,
+   "To": 0.19,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Luffield & Woodcote",
+   "From": 0.355,
+   "To": 0.455,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "National Pits Straight",
+   "From": 0.455,
+   "To": 0.51,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Copse (outside)",
+   "From": 0.51,
+   "To": 0.56,
+   "Side": "L",
+   "Offset": 70,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Becketts & Club Silverstone",
+   "From": 0.61,
+   "To": 0.7,
+   "Side": "L",
+   "Offset": 70,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Stowe",
+   "From": 0.84,
+   "To": 0.88,
+   "Side": "L",
+   "Offset": 50,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Vale",
+   "From": 0.885,
+   "To": 0.935,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 1,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Club",
+   "From": 0.935,
+   "To": 0.985,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

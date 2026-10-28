@@ -1,0 +1,62 @@
+{
+ "Track": "Sebring International Raceway",
+ "Match": [
+  "sebring international"
+ ],
+ "LengthMeters": 5794,
+ "PaAt": 0.0,
+ "Notes": "First pass (2026-10-28): stand positions from the official grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Sides are a best guess where the guides don't say - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "sebringraceway.com where-to-watch",
+  "racer.com 2015 Sebring viewing guide",
+  "CrewChief trackLandmarksData (sebring international)"
+ ],
+ "Stands": [
+  {
+   "Name": "Pit terraces (Fangio & Gurney)",
+   "From": 0.97,
+   "To": 0.03,
+   "Side": "R",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Turn 3 grandstand (Kristensen)",
+   "From": 0.14,
+   "To": 0.175,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gurney Bend berm",
+   "From": 0.224,
+   "To": 0.259,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 1,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hairpin grandstands & mound",
+   "From": 0.325,
+   "To": 0.36,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 17 viewing",
+   "From": 0.9,
+   "To": 0.965,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 1,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

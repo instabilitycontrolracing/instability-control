@@ -1,0 +1,43 @@
+{
+ "Track": "Misano World Circuit Marco Simoncelli - Grand Prix 2007",
+ "Match": [
+  "misano gp2007"
+ ],
+ "LengthMeters": 4155,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.moto.it/MotoGP/motogp-tutte-info-per-vedere-gp-di-misano.html",
+  "CrewChief trackLandmarksData (misano gp2007)"
+ ],
+ "Stands": [
+  {
+   "Name": "Tribuna C",
+   "From": 0.803,
+   "To": 0.836,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tribuna D",
+   "From": 0.803,
+   "To": 0.836,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Prato 2",
+   "From": 0.383,
+   "To": 0.419,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

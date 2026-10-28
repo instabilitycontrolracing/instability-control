@@ -1,0 +1,79 @@
+{
+ "Track": "Suzuka International Racing Course - Moto",
+ "Match": [
+  "suzuka moto"
+ ],
+ "LengthMeters": 5758,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.grandprixgrandtours.com/japan-circuit-guide",
+  "CrewChief trackLandmarksData (suzuka moto)"
+ ],
+ "Stands": [
+  {
+   "Name": "V1-V2",
+   "From": 0.97,
+   "To": 0.104,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "A1-A2",
+   "From": 0.104,
+   "To": 0.139,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "B1-B2",
+   "From": 0.141,
+   "To": 0.165,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "C",
+   "From": 0.141,
+   "To": 0.165,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "D & E",
+   "From": 0.181,
+   "To": 0.281,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Q1-Q2",
+   "From": 0.851,
+   "To": 0.886,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "R & S",
+   "From": 0.923,
+   "To": 0.97,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

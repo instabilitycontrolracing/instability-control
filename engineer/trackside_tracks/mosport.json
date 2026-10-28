@@ -1,0 +1,34 @@
+{
+ "Track": "Canadian Tire Motorsport Park",
+ "Match": [
+  "mosport"
+ ],
+ "LengthMeters": 3914,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://petrolicious.com/the-circuit-of-mosport-and-memories-of-canadian-road-racing",
+  "CrewChief trackLandmarksData (mosport)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 2 hill",
+   "From": 0.159,
+   "To": 0.237,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Moss Corner wall",
+   "From": 0.475,
+   "To": 0.573,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

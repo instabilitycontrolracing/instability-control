@@ -1,0 +1,88 @@
+{
+ "Track": "Suzuka International Racing Course",
+ "Match": [
+  "suzuka grandprix"
+ ],
+ "LengthMeters": 5754,
+ "PaAt": 0.0,
+ "Notes": "First pass (2026-10-28): stand positions from the official grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Sides are a best guess where the guides don't say - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "grandprixgrandtours.com/japan-circuit-guide",
+  "CrewChief trackLandmarksData (suzuka grandprix)"
+ ],
+ "Stands": [
+  {
+   "Name": "V1-V2 main grandstand",
+   "From": 0.97,
+   "To": 0.06,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "A1-A2 (into Turn 1)",
+   "From": 0.06,
+   "To": 0.105,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "B1-B2 (outside Turn 2)",
+   "From": 0.13,
+   "To": 0.165,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "C (exit of Turns 1-2)",
+   "From": 0.165,
+   "To": 0.185,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "D & E (S Curves)",
+   "From": 0.185,
+   "To": 0.28,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "I (Hairpin exit)",
+   "From": 0.505,
+   "To": 0.53,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Q1-Q2 (130R exit)",
+   "From": 0.885,
+   "To": 0.925,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "R & S (Casio Triangle exit)",
+   "From": 0.945,
+   "To": 0.97,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

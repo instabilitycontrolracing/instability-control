@@ -1,0 +1,70 @@
+{
+ "Track": "Oulton Park - Fosters",
+ "Match": [
+  "oulton fosters"
+ ],
+ "LengthMeters": 2645,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://oversteer48.com/oulton-park-grandstands/",
+  "CrewChief trackLandmarksData (oulton fosters)"
+ ],
+ "Stands": [
+  {
+   "Name": "Old Hall grandstand",
+   "From": 0.049,
+   "To": 0.117,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Knickerbrook grandstand (largest)",
+   "From": 0.386,
+   "To": 0.435,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Lodge grandstand",
+   "From": 0.832,
+   "To": 0.881,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Cascades / Hislop's banking",
+   "From": 0.233,
+   "To": 0.282,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Knickerbrook banking",
+   "From": 0.386,
+   "To": 0.435,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Druids infield (woods)",
+   "From": 0.624,
+   "To": 0.707,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

@@ -1,0 +1,43 @@
+{
+ "Track": "Adelaide Street Circuit",
+ "Match": [
+  "adelaide"
+ ],
+ "LengthMeters": 3213,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://adelaide500.com.au/latest-news/the-best-grandstand-seats-at-the-vailo-adelaide-500",
+  "CrewChief trackLandmarksData (adelaide)"
+ ],
+ "Stands": [
+  {
+   "Name": "Barry Sheene Pit Straight Grandstand",
+   "From": 0.943,
+   "To": 0.068,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Hairpin Grandstand",
+   "From": 0.903,
+   "To": 0.943,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Inside Chicane grandstand",
+   "From": 0.068,
+   "To": 0.087,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

@@ -1,0 +1,61 @@
+{
+ "Track": "Phillip Island Grand Prix Circuit",
+ "Match": [
+  "phillipisland"
+ ],
+ "LengthMeters": 4407,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.motogp.com.au/fan-zone/news/best-motogp-️viewing-spots-at-phillip-island-grand-prix-circuit",
+  "CrewChief trackLandmarksData (phillipisland)"
+ ],
+ "Stands": [
+  {
+   "Name": "Doohan Corner viewing",
+   "From": 0.09,
+   "To": 0.166,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Siberia hillside and grandstand",
+   "From": 0.471,
+   "To": 0.531,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hayshed viewing",
+   "From": 0.537,
+   "To": 0.631,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Lukey Heights viewing",
+   "From": 0.641,
+   "To": 0.735,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gardner Straight fence / Trackside Club",
+   "From": 0.937,
+   "To": 0.09,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

@@ -1,0 +1,53 @@
+{
+ "Track": "WeatherTech Raceway Laguna Seca - 2026",
+ "Match": [
+  "lagunaseca 2026"
+ ],
+ "LengthMeters": 3556,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.speedhunters.com/?p=282889",
+  "https://countyofmonterey.gov/government/government-links/weathertech-raceway/ticket-information/vip-hospitality-tickets/corporate-hospitality/turn-2-trackview-chalet",
+  "CrewChief trackLandmarksData (lagunaseca 2026)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 4 bleachers",
+   "From": 0.281,
+   "To": 0.318,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Corkscrew viewing hill",
+   "From": 0.681,
+   "To": 0.711,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Rainey Curve viewing",
+   "From": 0.742,
+   "To": 0.793,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 2 Trackview Chalet (hospitality)",
+   "From": 0.115,
+   "To": 0.157,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

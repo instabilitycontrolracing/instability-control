@@ -1,0 +1,34 @@
+{
+ "Track": "VIRginia International Raceway - Full Course",
+ "Match": [
+  "virginia 2022 full"
+ ],
+ "LengthMeters": 5217,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.imsa.com/news/2022/08/22/theres-more-to-see-at-vir-with-expanded-viewing-camping-areas/",
+  "CrewChief trackLandmarksData (virginia 2022 full)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 2-5 spectator area",
+   "From": 0.213,
+   "To": 0.228,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "South end spectator area",
+   "From": 0.782,
+   "To": 0.799,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

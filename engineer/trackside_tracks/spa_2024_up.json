@@ -1,0 +1,79 @@
+{
+ "Track": "Circuit de Spa-Francorchamps - Grand Prix Pits",
+ "Match": [
+  "spa 2024 up"
+ ],
+ "LengthMeters": 6929,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.autosport.com/f1/news/belgian-gp-tickets-the-best-grandstands-where-to-stay-and-how-to-get-there/6240443/",
+  "CrewChief trackLandmarksData (spa 2024 up)"
+ ],
+ "Stands": [
+  {
+   "Name": "Gold 7 / Gold 8",
+   "From": 0.045,
+   "To": 0.065,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gold 3 / Gold 4 / Gold 10",
+   "From": 0.135,
+   "To": 0.166,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gold 1 (opposite pits) / Gold 9",
+   "From": 0.957,
+   "To": 0.984,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gold 6",
+   "From": 0.957,
+   "To": 0.984,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gold 2 / Silver 1 / Silver 2",
+   "From": 0.045,
+   "To": 0.065,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Silver 3",
+   "From": 0.535,
+   "To": 0.602,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Silver 4",
+   "From": 0.421,
+   "To": 0.454,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

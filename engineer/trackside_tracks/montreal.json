@@ -1,0 +1,70 @@
+{
+ "Track": "Circuit Gilles Villeneuve",
+ "Match": [
+  "montreal"
+ ],
+ "LengthMeters": 4310,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://cms.thef1spectator.com/canadian-grand-prix-travel-guide/where-to-watch/",
+  "CrewChief trackLandmarksData (montreal)"
+ ],
+ "Stands": [
+  {
+   "Name": "Grandstand 1",
+   "From": 0.919,
+   "To": 0.044,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Platine",
+   "From": 0.044,
+   "To": 0.097,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 11 and 12",
+   "From": 0.067,
+   "To": 0.097,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Family Grandstand (33)",
+   "From": 0.276,
+   "To": 0.329,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 15, 21, 24 (Lance Stroll), 34, 46 (left)",
+   "From": 0.603,
+   "To": 0.642,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 15, 21, 24 (Lance Stroll), 34, 46 (right)",
+   "From": 0.603,
+   "To": 0.642,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

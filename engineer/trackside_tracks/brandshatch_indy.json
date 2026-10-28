@@ -1,0 +1,52 @@
+{
+ "Track": "Brands Hatch - Indy",
+ "Match": [
+  "brandshatch indy"
+ ],
+ "LengthMeters": 1920,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://oversteer48.com/brands-hatch-grandstands/",
+  "CrewChief trackLandmarksData (brandshatch indy)"
+ ],
+ "Stands": [
+  {
+   "Name": "Paddock Hill grandstand",
+   "From": 0.023,
+   "To": 0.19,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hailwoods grandstand",
+   "From": 0.023,
+   "To": 0.19,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Desire Wilson grandstand",
+   "From": 0.023,
+   "To": 0.19,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Pit Straight grandstand",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

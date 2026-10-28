@@ -1,0 +1,44 @@
+{
+ "Track": "Detroit Grand Prix at Belle Isle - Belle Isle",
+ "Match": [
+  "belleisle"
+ ],
+ "LengthMeters": 3756,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://racer.com/2016/12/12/belle-isle-a-state-park-turned-racetrack/",
+  "https://henrypayne.com/?p=27467",
+  "CrewChief trackLandmarksData (belleisle)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turns 1-2 grandstands",
+   "From": 0.015,
+   "To": 0.056,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 8 viewing (outside)",
+   "From": 0.662,
+   "To": 0.681,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Carousel / Scott Fountain area",
+   "From": 0.695,
+   "To": 0.743,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

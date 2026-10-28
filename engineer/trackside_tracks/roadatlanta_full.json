@@ -1,0 +1,43 @@
+{
+ "Track": "Michelin Raceway Road Atlanta - Full Course",
+ "Match": [
+  "roadatlanta full"
+ ],
+ "LengthMeters": 4057,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.imsa.com/news/2020/09/01/a-spectators-guide-to-the-michelin-endurance-challenge-weekend-at-michelin-raceway-road-atlanta/",
+  "CrewChief trackLandmarksData (roadatlanta full)"
+ ],
+ "Stands": [
+  {
+   "Name": "Spectator Hill",
+   "From": 0.27,
+   "To": 0.362,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 10 terrace seating (bowl, 10,000-seat terraces)",
+   "From": 0.848,
+   "To": 0.898,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Pad by the drive-over bridge",
+   "From": 0.918,
+   "To": 0.953,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

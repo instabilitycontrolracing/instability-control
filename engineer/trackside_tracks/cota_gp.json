@@ -1,0 +1,79 @@
+{
+ "Track": "Circuit of the Americas - Grand Prix",
+ "Match": [
+  "cota gp"
+ ],
+ "LengthMeters": 5414,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://circuitoftheamericas.com/?p=1561",
+  "CrewChief trackLandmarksData (cota gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Main Grandstand",
+   "From": 0.983,
+   "To": 0.107,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Turn 1 Grandstand",
+   "From": 0.107,
+   "To": 0.137,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 4 Grandstand",
+   "From": 0.209,
+   "To": 0.257,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 9 Bleachers",
+   "From": 0.356,
+   "To": 0.37,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 12 Bleachers",
+   "From": 0.678,
+   "To": 0.7,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 15 Grandstand",
+   "From": 0.765,
+   "To": 0.789,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 19 Grandstands",
+   "From": 0.858,
+   "To": 0.983,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

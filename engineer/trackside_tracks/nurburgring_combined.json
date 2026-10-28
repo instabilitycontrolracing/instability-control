@@ -1,0 +1,44 @@
+{
+ "Track": "Nürburgring - Gesamtstrecke 24h",
+ "Match": [
+  "nurburgring combined"
+ ],
+ "LengthMeters": 25176,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://nring.info/nurburgring-nordschleife-corners/brunnchen-youtube-corner/",
+  "https://nuerburgring.de/news/ring-guide-24h-rennen?locale=en",
+  "CrewChief trackLandmarksData (nurburgring combined)"
+ ],
+ "Stands": [
+  {
+   "Name": "Brünnchen spectator area",
+   "From": 0.728,
+   "To": 0.743,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Pflanzgarten viewing (day-visitor parking)",
+   "From": 0.765,
+   "To": 0.784,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Schwalbenschwanz viewing (day-visitor parking)",
+   "From": 0.818,
+   "To": 0.831,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

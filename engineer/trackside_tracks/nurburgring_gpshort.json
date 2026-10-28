@@ -1,0 +1,34 @@
+{
+ "Track": "Nürburgring Grand-Prix-Strecke - Grand Prix w/out Arena",
+ "Match": [
+  "nurburgring gpshort"
+ ],
+ "LengthMeters": 4567,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://mobile.nuerburgring.de/news/fragen-und-antworten-zum-12h-nuerburgring-red-bull-formula-nuerburgring?locale=en",
+  "CrewChief trackLandmarksData (nurburgring gpshort)"
+ ],
+ "Stands": [
+  {
+   "Name": "T3 (BMW M Power grandstand) and T4/T4a",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "T12a",
+   "From": 0.755,
+   "To": 0.792,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

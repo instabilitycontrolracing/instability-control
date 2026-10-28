@@ -1,0 +1,70 @@
+{
+ "Track": "Sachsenring",
+ "Match": [
+  "sachsenring"
+ ],
+ "LengthMeters": 3593,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.adac-motorsport.de/en/motogp-sachsenring/grandstands/",
+  "CrewChief trackLandmarksData (sachsenring)"
+ ],
+ "Stands": [
+  {
+   "Name": "T1 main grandstand",
+   "From": 0.965,
+   "To": 0.143,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "T2 (largest)",
+   "From": 0.143,
+   "To": 0.189,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T3 / T3-1 / T4",
+   "From": 0.237,
+   "To": 0.287,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T6-T10",
+   "From": 0.404,
+   "To": 0.459,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T13",
+   "From": 0.814,
+   "To": 0.871,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T15",
+   "From": 0.921,
+   "To": 0.965,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

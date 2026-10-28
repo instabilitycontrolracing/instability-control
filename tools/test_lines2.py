@@ -1,0 +1,25 @@
+try:
+    from spoken_name import NAME          # the driver's first name for the test lines
+except ImportError:
+    from tools.spoken_name import NAME
+LINES2 = [
+    "Radio check, {NAME}. Loud and clear.",
+    "Green, green, green. Go, go, go.",
+    "Car left. Car left. Three wide.",
+    "Clear. You are clear.",
+    "Yellow at turn six. Yellow turn six. Careful.",
+    "Blue flag. Faster car behind, let him by at the end of the straight.",
+    "Gap to the leader is four point eight. He is on older tyres.",
+    "Car behind has DRS. Defend into turn one.",
+    "Fuel for nine laps, seven to go. We are good to the end.",
+    "Five laps remaining. Five laps.",
+    "That is twelve x. Limit is seventeen. Careful with the contact.",
+    "Small aero damage on the front left. Car is okay at the moment.",
+    "Not the start we wanted. We recover, we recover. Long race.",
+    "Purple sector one. Purple sector one. Good lap.",
+    "Stay out, stay out. Pit lane is closed.",
+    "Safety car, safety car. Slow down, keep the delta positive.",
+    "Safety car in this lap. Safety car in this lap. Get ready for the restart.",
+    "P4, P4. Good points today, {NAME}. Good job.",
+]
+LINES2 = [t.replace("{NAME}", NAME) for t in LINES2]

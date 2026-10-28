@@ -1,0 +1,71 @@
+{
+ "Track": "Road America - Full Course",
+ "Match": [
+  "roadamerica full"
+ ],
+ "LengthMeters": 6414,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://imsa.com/news/2020/july/27/a-spectators-guide-to-road-america",
+  "https://www.autoextremist.com/fumes1/2013/8/6/the-sound-the-guts-the-glory-an-enthusiast-guide-to-road-ame.html",
+  "CrewChief trackLandmarksData (roadamerica full)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 5 bleachers / meadow",
+   "From": 0.343,
+   "To": 0.374,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Inside the Carousel",
+   "From": 0.529,
+   "To": 0.608,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hawk Performance foot bridge (left)",
+   "From": 0.645,
+   "To": 0.67,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hawk Performance foot bridge (right)",
+   "From": 0.645,
+   "To": 0.67,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Canada Corner hillside",
+   "From": 0.78,
+   "To": 0.804,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hill over Bill Mitchell Bend",
+   "From": 0.834,
+   "To": 0.857,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

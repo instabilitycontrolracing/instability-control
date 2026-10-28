@@ -1,0 +1,53 @@
+{
+ "Track": "Mid-Ohio Sports Car Course - Full Course",
+ "Match": [
+  "midohio full"
+ ],
+ "LengthMeters": 3556,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://imsa.com/news/2025/june/09/multitude-of-best-seat-options-at-mid-ohio",
+  "https://en.wikipedia.org/wiki/Mid-Ohio_Sports_Car_Course",
+  "CrewChief trackLandmarksData (midohio full)"
+ ],
+ "Stands": [
+  {
+   "Name": "Grandstand outside the Esses",
+   "From": 0.614,
+   "To": 0.714,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Keyhole hillside overlook",
+   "From": 0.23,
+   "To": 0.304,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Carousel / Victory Lane area",
+   "From": 0.88,
+   "To": 0.948,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Main grandstand (12,000 seats)",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

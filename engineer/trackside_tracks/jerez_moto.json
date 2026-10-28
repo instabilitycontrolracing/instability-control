@@ -1,0 +1,52 @@
+{
+ "Track": "Circuito de Jerez - Ángel Nieto - Moto",
+ "Match": [
+  "jerez moto"
+ ],
+ "LengthMeters": 4372,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.news.gp/en/fan-guide-motogp-jerez-everything-you-need-to-know",
+  "CrewChief trackLandmarksData (jerez moto)"
+ ],
+ "Stands": [
+  {
+   "Name": "Tribuna de Meta",
+   "From": 0.931,
+   "To": 0.046,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Grandstand A10",
+   "From": 0.446,
+   "To": 0.492,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands W1, W6, W7",
+   "From": 0.762,
+   "To": 0.796,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Final corner grandstand",
+   "From": 0.892,
+   "To": 0.931,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

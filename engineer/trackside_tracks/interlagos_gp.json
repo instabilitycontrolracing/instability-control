@@ -1,0 +1,97 @@
+{
+ "Track": "Autódromo José Carlos Pace - Grand Prix",
+ "Match": [
+  "interlagos gp"
+ ],
+ "LengthMeters": 4223,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://f1saopaulo.com.br/en/stands/",
+  "CrewChief trackLandmarksData (interlagos gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Setor M",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Porto Bank Grandstand",
+   "From": 0.059,
+   "To": 0.12,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Setor D",
+   "From": 0.059,
+   "To": 0.12,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Setor H",
+   "From": 0.059,
+   "To": 0.181,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Setor R",
+   "From": 0.12,
+   "To": 0.181,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Setor G",
+   "From": 0.302,
+   "To": 0.393,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Orange Tree Club",
+   "From": 0.482,
+   "To": 0.514,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grand Prix Club",
+   "From": 0.558,
+   "To": 0.657,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Setor A",
+   "From": 0.921,
+   "To": 0.947,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

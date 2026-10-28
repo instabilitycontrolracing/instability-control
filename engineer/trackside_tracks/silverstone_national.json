@@ -1,0 +1,52 @@
+{
+ "Track": "Silverstone Circuit - National Circuit (2011)",
+ "Match": [
+  "silverstone national"
+ ],
+ "LengthMeters": 2609,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.grandprixgrandtours.com/silverstone-circuit-guide",
+  "CrewChief trackLandmarksData (silverstone national)"
+ ],
+ "Stands": [
+  {
+   "Name": "The View, Farm Curve, Village A-B",
+   "From": 0.364,
+   "To": 0.469,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Luffield A-B, Woodcote A-B",
+   "From": 0.764,
+   "To": 0.859,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "National Pits Straight",
+   "From": 0.954,
+   "To": 0.115,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Copse A-B-C",
+   "From": 0.115,
+   "To": 0.217,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

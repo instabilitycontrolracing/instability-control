@@ -1,0 +1,25 @@
+{
+ "Track": "Autódromo Internacional do Algarve - Grand Prix",
+ "Match": [
+  "algarve gp"
+ ],
+ "LengthMeters": 4579,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://autodromodoalgarve.com/the-park/racing-track/",
+  "CrewChief trackLandmarksData (algarve gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Main stand (16,654 seats)",
+   "From": 0.946,
+   "To": 0.124,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

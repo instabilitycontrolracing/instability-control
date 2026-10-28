@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+venv*/
+*.log
+engineer_settings.json
+# big or personal things that live outside the code
+Engineer1/
+Strategist/
+llm/
+asr/
+schedules/
+cache/
+*.ibt
+*.wav
+*.gguf
+*.onnx
+Trackside/
+shots/*.wav
+dist/
+
+engineer_race_state.json
+engineer_race_state.json.tmp
+engineer_timing_state.json
+engineer_timing_state.json.tmp
+engineer_laps_state.json
+engineer_laps_state.json.tmp
+# personal fonts (F1 timing face) - used on this PC only, never shipped
+engineer/ui/assets/RaycerRay*

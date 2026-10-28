@@ -1,0 +1,70 @@
+{
+ "Track": "Hockenheimring Baden-Württemberg - Grand",
+ "Match": [
+  "hockenheim gp"
+ ],
+ "LengthMeters": 4530,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://de.wikipedia.org/wiki/Hockenheimring_Baden-Württemberg",
+  "CrewChief trackLandmarksData (hockenheim gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Mercedes-Tribüne",
+   "From": 0.611,
+   "To": 0.629,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Südtribüne",
+   "From": 0.922,
+   "To": 0.961,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Nordtribüne",
+   "From": 0.043,
+   "To": 0.078,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "LBBW Haupttribüne (main grandstand)",
+   "From": 0.961,
+   "To": 0.043,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Spitzkehre 1 & 2 (temporary)",
+   "From": 0.449,
+   "To": 0.478,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Einfahrt Parabolika (temporary)",
+   "From": 0.173,
+   "To": 0.192,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

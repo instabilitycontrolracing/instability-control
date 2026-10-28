@@ -1,0 +1,52 @@
+{
+ "Track": "Autodromo Nazionale Monza - Combined without chicanes",
+ "Match": [
+  "monza historic"
+ ],
+ "LengthMeters": 9984,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.grandprixgrandtours.com/italy-circuit-guide",
+  "CrewChief trackLandmarksData (monza historic)"
+ ],
+ "Stands": [
+  {
+   "Name": "Centrale (1) and 26-30",
+   "From": 0.983,
+   "To": 0.07,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "9, 10, 33A/33B",
+   "From": 0.632,
+   "To": 0.651,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "12-20",
+   "From": 0.814,
+   "To": 0.847,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "21, 22, 23",
+   "From": 0.929,
+   "To": 0.983,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

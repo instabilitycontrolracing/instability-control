@@ -1,0 +1,43 @@
+{
+ "Track": "Indianapolis Motor Speedway - Road Course",
+ "Match": [
+  "indianapolis 2022 road"
+ ],
+ "LengthMeters": 3845,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.indycar.com/Global/News/2013/10/10-1-New-road-course-offers-excitement-for-fans",
+  "CrewChief trackLandmarksData (indianapolis 2022 road)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 1 spectator mounds",
+   "From": 0.144,
+   "To": 0.186,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Infield grandstands",
+   "From": 0.309,
+   "To": 0.354,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Turn 7 grandstands",
+   "From": 0.51,
+   "To": 0.551,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

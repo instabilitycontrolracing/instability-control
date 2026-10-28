@@ -1,0 +1,52 @@
+{
+ "Track": "Red Bull Ring - National",
+ "Match": [
+  "spielberg national"
+ ],
+ "LengthMeters": 2312,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.fanamp.com/tr/choosing-your-seats-at-the-austrian-gp",
+  "CrewChief trackLandmarksData (spielberg national)"
+ ],
+ "Stands": [
+  {
+   "Name": "Start-Ziel Grandstand",
+   "From": 0.975,
+   "To": 0.03,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Steiermark Grandstand",
+   "From": 0.167,
+   "To": 0.223,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T3 Grandstand",
+   "From": 0.43,
+   "To": 0.489,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "T9 and T10 Grandstand",
+   "From": 0.742,
+   "To": 0.908,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

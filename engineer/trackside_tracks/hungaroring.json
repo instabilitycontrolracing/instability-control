@@ -1,0 +1,70 @@
+{
+ "Track": "Hungaroring",
+ "Match": [
+  "hungaroring"
+ ],
+ "LengthMeters": 4328,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://f1experiences.com/blog/where-to-watch-the-action-at-the-hungarian-gp",
+  "CrewChief trackLandmarksData (hungaroring)"
+ ],
+ "Stands": [
+  {
+   "Name": "Turn 1 Grandstand (outside)",
+   "From": 0.127,
+   "To": 0.15,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Pit Exit 1 Grandstand (outside)",
+   "From": 0.127,
+   "To": 0.15,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Hungaroring Grandstand (opposite pits)",
+   "From": 0.963,
+   "To": 0.127,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Grid 3 Grandstand",
+   "From": 0.913,
+   "To": 0.963,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Apex 1 Grandstand",
+   "From": 0.913,
+   "To": 0.963,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Champions Club (outside of Turn 2)",
+   "From": 0.238,
+   "To": 0.277,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

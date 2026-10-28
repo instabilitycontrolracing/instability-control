@@ -1,0 +1,97 @@
+{
+ "Track": "Autodromo Nazionale Monza",
+ "Match": [
+  "monza full"
+ ],
+ "LengthMeters": 5751,
+ "PaAt": 0.0,
+ "Notes": "First pass (2026-10-28): stand positions from the official grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Sides are a best guess where the guides don't say - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "grandprixgrandtours.com/italy-circuit-guide",
+  "CrewChief trackLandmarksData (monza full)"
+ ],
+ "Stands": [
+  {
+   "Name": "Main straight (Centrale, 26)",
+   "From": 0.965,
+   "To": 0.06,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Pit straight stands 27-30",
+   "From": 0.975,
+   "To": 0.04,
+   "Side": "R",
+   "Offset": 50,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Stands 2-5 (run to the Rettifilo)",
+   "From": 0.06,
+   "To": 0.145,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Rettifilo outside (8A/8B)",
+   "From": 0.145,
+   "To": 0.185,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Rettifilo inside (6A-6C)",
+   "From": 0.15,
+   "To": 0.185,
+   "Side": "R",
+   "Offset": 35,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Roggia (9, 10, 33)",
+   "From": 0.35,
+   "To": 0.395,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Ascari (12-20)",
+   "From": 0.665,
+   "To": 0.735,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Parabolica (21, 22, GF13)",
+   "From": 0.87,
+   "To": 0.965,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Parabolica entry inside (23)",
+   "From": 0.87,
+   "To": 0.9,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

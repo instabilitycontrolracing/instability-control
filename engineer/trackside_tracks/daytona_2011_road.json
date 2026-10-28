@@ -1,0 +1,35 @@
+{
+ "Track": "Daytona International Speedway - Road Course",
+ "Match": [
+  "daytona 2011 road"
+ ],
+ "LengthMeters": 5687,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://en.wikipedia.org/wiki/Daytona_International_Speedway",
+  "https://racer.com/2016/01/19/top-10-spots-to-watch-the-rolex-24",
+  "CrewChief trackLandmarksData (daytona 2011 road)"
+ ],
+ "Stands": [
+  {
+   "Name": "Frontstretch stadium (Daytona Rising)",
+   "From": 0.884,
+   "To": 0.042,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Infield bleachers",
+   "From": 0.153,
+   "To": 0.193,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

@@ -1,0 +1,16 @@
+name: Idea
+description: Something you'd like it to do.
+title: "[Idea] "
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would make it better?
+      description: Tell us what you'd want on the radio or on screen, and when.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it matter in the car?

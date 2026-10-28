@@ -1,0 +1,12 @@
+PC to TV with Apollo - quick start
+
+1. On this PC open:  https://localhost:47990
+   (If it says "not secure": click Advanced, then Continue. It is your own PC.)
+2. Make a username and password. Write them down.
+3. On the TV: install Artemis (or Moonlight) from its app store.
+4. Open it and pick this PC. It shows a PIN.
+5. On the Apollo page: click PIN, type the PIN, click Send.
+6. On the TV: pick Desktop. Done.
+
+Not working? PC and TV must be on the same home network.
+If Windows asks whether to allow Apollo on the network, that choice is yours (Allow = it works).

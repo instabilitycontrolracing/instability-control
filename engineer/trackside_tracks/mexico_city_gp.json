@@ -1,0 +1,70 @@
+{
+ "Track": "Autódromo Hermanos Rodríguez",
+ "Match": [
+  "mexicocity gp"
+ ],
+ "LengthMeters": 4239,
+ "PaAt": 0.0,
+ "Notes": "First pass (2026-10-28): stand positions from the official grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Sides are a best guess where the guides don't say - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "grandprixgrandtours.com/mexico-circuit-guide",
+  "CrewChief trackLandmarksData (mexicocity gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Main grandstand",
+   "From": 0.975,
+   "To": 0.045,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Grandstands 3-6 (Turns 1-2)",
+   "From": 0.235,
+   "To": 0.31,
+   "Side": "L",
+   "Offset": 50,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstand 5A (Turn 3 exit, inside)",
+   "From": 0.31,
+   "To": 0.335,
+   "Side": "R",
+   "Offset": 35,
+   "Size": 1,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstands 9-11 (Turns 4-6)",
+   "From": 0.465,
+   "To": 0.55,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Grandstand 15 (Turn 12)",
+   "From": 0.835,
+   "To": 0.87,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Foro Sol stadium",
+   "From": 0.87,
+   "To": 0.915,
+   "Side": "L",
+   "Offset": 35,
+   "Size": 3,
+   "Vibe": "main"
+  }
+ ],
+ "Spots": []
+}

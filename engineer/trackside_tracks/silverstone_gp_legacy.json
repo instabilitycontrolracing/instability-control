@@ -1,0 +1,97 @@
+{
+ "Track": "Silverstone Circuit - Grand Prix Circuit (2011)",
+ "Match": [
+  "silverstone gp"
+ ],
+ "LengthMeters": 5050,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.grandprixgrandtours.com/silverstone-circuit-guide",
+  "CrewChief trackLandmarksData (silverstone gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Abbey",
+   "From": 0.697,
+   "To": 0.738,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "The View, Farm Curve, Village A-B",
+   "From": 0.22,
+   "To": 0.274,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Luffield A-B, Woodcote A-B",
+   "From": 0.874,
+   "To": 0.925,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "National Pits Straight",
+   "From": 0.989,
+   "To": 0.055,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "Copse A-B-C",
+   "From": 0.055,
+   "To": 0.111,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Club Silverstone and Becketts",
+   "From": 0.164,
+   "To": 0.274,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Stowe A-B-C",
+   "From": 0.434,
+   "To": 0.489,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Vale",
+   "From": 0.539,
+   "To": 0.559,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Club A",
+   "From": 0.559,
+   "To": 0.62,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

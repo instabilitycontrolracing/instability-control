@@ -1,0 +1,70 @@
+{
+ "Track": "Autodromo Internazionale Enzo e Dino Ferrari",
+ "Match": [
+  "imola gp"
+ ],
+ "LengthMeters": 4862,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.grandprixgrandtours.com/?p=19270",
+  "CrewChief trackLandmarksData (imola gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Main straight grandstands 1-4",
+   "From": 0.136,
+   "To": 0.187,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Villeneuve 1-2",
+   "From": 0.136,
+   "To": 0.294,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tosa 1-2",
+   "From": 0.337,
+   "To": 0.362,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Acque Minerali 1-4",
+   "From": 0.553,
+   "To": 0.59,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Gresini 1-2",
+   "From": 0.679,
+   "To": 0.695,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Rivazza 1",
+   "From": 0.837,
+   "To": 0.878,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

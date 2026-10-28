@@ -1,0 +1,44 @@
+{
+ "Track": "Nürburgring - Gesamtstrecke Short w/o Arena",
+ "Match": [
+  "nurburgring combinedshorta"
+ ],
+ "LengthMeters": 23651,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 (round 2) from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. A start/finish stand with no corner to place it by uses the app's default main-grandstand span. Stands whose corner isn't on this layout are left out. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://nring.info/nurburgring-nordschleife-corners/brunnchen-youtube-corner/",
+  "https://nuerburgring.de/news/ring-guide-24h-rennen?locale=en",
+  "CrewChief trackLandmarksData (nurburgring combinedshorta)"
+ ],
+ "Stands": [
+  {
+   "Name": "Brünnchen spectator area",
+   "From": 0.711,
+   "To": 0.726,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Pflanzgarten viewing (day-visitor parking)",
+   "From": 0.75,
+   "To": 0.763,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Schwalbenschwanz viewing (day-visitor parking)",
+   "From": 0.807,
+   "To": 0.82,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

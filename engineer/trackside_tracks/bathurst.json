@@ -1,0 +1,53 @@
+{
+ "Track": "Mount Panorama Circuit",
+ "Match": [
+  "bathurst"
+ ],
+ "LengthMeters": 6144,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://speedcafe.com/new-grandstands-added-for-bathurst-1000/",
+  "https://www.bathurst.nsw.gov.au/Services/Facilities/Mount-Panorama/About-the-Mount/The-Circuit",
+  "CrewChief trackLandmarksData (bathurst)"
+ ],
+ "Stands": [
+  {
+   "Name": "Pit straight grandstand (first stand)",
+   "From": 0.988,
+   "To": 0.05,
+   "Side": "L",
+   "Offset": 45,
+   "Size": 3,
+   "Vibe": "main"
+  },
+  {
+   "Name": "The Chase grandstand",
+   "From": 0.868,
+   "To": 0.92,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "The Museum grandstand",
+   "From": 0.96,
+   "To": 0.988,
+   "Side": "R",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "McPhillamy Park campers",
+   "From": 0.464,
+   "To": 0.496,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}

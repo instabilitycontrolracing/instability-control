@@ -1,0 +1,70 @@
+{
+ "Track": "Misano World Circuit Marco Simoncelli - Grand",
+ "Match": [
+  "misano gp"
+ ],
+ "LengthMeters": 4174,
+ "PaAt": 0.0,
+ "Notes": "Generated 2026-10-28 from the verified track research pack: stands from the cited grandstand guides, placed with CrewChief's corner distances for this iRacing layout (lap fraction from the start/finish line; L/R in the direction of travel). Where the guides don't say which side, the stand is put on the left (the add-on's default) - refine with the Mark Grandstand buttons. Your own file in Trackside\\tracks\\ with the same Match wins.",
+ "Sources": [
+  "https://www.moto.it/MotoGP/motogp-tutte-info-per-vedere-gp-di-misano.html",
+  "CrewChief trackLandmarksData (misano gp)"
+ ],
+ "Stands": [
+  {
+   "Name": "Tribuna A-B",
+   "From": 0.8,
+   "To": 0.832,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tribuna C",
+   "From": 0.8,
+   "To": 0.832,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tribuna D",
+   "From": 0.8,
+   "To": 0.832,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tribuna F",
+   "From": 0.182,
+   "To": 0.254,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Tribuna Brutapela",
+   "From": 0.048,
+   "To": 0.078,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  },
+  {
+   "Name": "Prato 2",
+   "From": 0.381,
+   "To": 0.417,
+   "Side": "L",
+   "Offset": 40,
+   "Size": 2,
+   "Vibe": "stand"
+  }
+ ],
+ "Spots": []
+}
