@@ -46,6 +46,8 @@ class Remote:
         self._places_busy = False
         from .aids import Aids
         self.aids = Aids()                       # 2026-10-25: the TC / LOCK pods, like the overlay
+        from .replay_dc import ReplayDC
+        self.replay_dc = ReplayDC(log=self.log)  # 2026-10-28 (#490): your in-car settings during a replay of your race
         # 2026-10-25: team radio on the iPad - each clip the PC puts on air is kept briefly as a WAV and announced
         # numbers never repeat across restarts (the iPad must never get a stale clip with the same number)
         self._clips, self._clip_n = {}, int(time.time()) * 100
@@ -440,10 +442,21 @@ class Remote:
             ss = 0
         out["ss"] = ss
         out["form"] = "race" in str(getattr(b, "sess_type", "") or "").lower() and 0 < ss < 4
+        rdc = None
         if lv.get("replay"):
             if lv.get("lap") is not None: out["lap"] = lv["lap"]
             if lv.get("pct") is not None: out["pct"] = round(lv["pct"], 4)
             if lv.get("cur") is not None: out["cur"] = r(lv["cur"], 3)
+            # 2026-10-28 (#490): a replay reads the in-car settings as 0 - play them back from your recording of that race
+            # (replay_dc), else leave them out (the iPad shows '-', never a made-up 0)
+            try:
+                rdc = self.replay_dc.values(b, g)
+            except Exception:
+                rdc = None
+            for k, n in (("bb", "dcBrakeBias"), ("farb", "dcAntiRollFront"), ("rarb", "dcAntiRollRear"), ("tc", "dcTractionControl"),
+                         ("tc2", "dcTractionControl2"), ("abs", "dcABS"), ("mig", "dcBrakeMisc")):
+                out[k] = r(rdc.get(n), 2) if rdc else None
+            out["dc_src"] = "recording" if rdc else None
         # 2026-10-26 (#197, request: "take the format of how things show on the steering wheel display and mirror it"): the
         # extra values the wheel's screen shows (BMW M4 GT3 Evo / M Hybrid V8). Anything iRacing doesn't send stays out (the
         # iPad shows a dash there - never a made-up number)
@@ -452,7 +465,7 @@ class Remote:
             if v is None: v = g(k + "airPressure")
             return r(v, 1)
         wh = {"tp": [tp("LF"), tp("RF"), tp("LR"), tp("RR")], "tmot": r(g("WaterTemp"), 1), "toil": r(g("OilTemp"), 1),
-              "poil": r(g("OilPress"), 1), "soc": r(g("EnergyERSBatteryPct"), 4), "map": r(g("dcThrottleShape"), 2),
+              "poil": r(g("OilPress"), 1), "soc": r(g("EnergyERSBatteryPct"), 4), "map": r((rdc or {}).get("dcThrottleShape") if lv.get("replay") else g("dcThrottleShape"), 2),
               "tyre": g("PlayerTireCompound"), "st": r(g("SessionTime"), 1),
               "lim": bool((g("EngineWarnings", 0) or 0) & 0x10)}
         try:
