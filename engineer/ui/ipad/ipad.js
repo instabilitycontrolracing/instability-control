@@ -181,6 +181,7 @@ function connect() {
   on("strat", onStrat);
   on("hb", () => { CONN.hb = true; });
   // laps / corners can arrive before lap.js has loaded: kept until it's ready (2026-10-26 - they used to be lost)
+  on("parts", (d) => { if (window.LAP && LAP.parts) LAP.parts(d); });   // 2026-10-28: sector times of partial laps
   on("laps", (d) => { if (window.LAP && LAP.load) LAP.load(d); else (window.LAP_PENDING = window.LAP_PENDING || {}).laps = d; });   // laps recorded on the PC (kept across restarts)
   on("off", () => { T = null; CARS.clear(); MAP.dirty = true; document.body.classList.add("idle"); chip("wait", "Waiting for iRacing"); kick(); });
 }

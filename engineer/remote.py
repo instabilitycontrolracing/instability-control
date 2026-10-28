@@ -353,6 +353,14 @@ class Remote:
             return
         self.timing.tick(brain)
         self.laps.tick(brain)
+        np_ = len(getattr(self.laps, "parts", None) or [])
+        if np_ != getattr(self, "_parts_n", np_) or (np_ and (self.laps.parts[0].get("no") != getattr(self, "_parts_top", None))):
+            try:                 # 2026-10-28 (#321): a partial lap's sectors were just kept - the iPad list gets them now
+                self.push("parts", {"key": self.laps.key, "parts": self.laps.payload()["parts"]})
+            except Exception as e:
+                self.log(f"[laps] parts: {e!r}")
+        self._parts_n = np_
+        self._parts_top = self.laps.parts[0].get("no") if np_ else None
         if self.clients and now - self._tm_last >= 0.5:
             self._tm_last = now
             try:

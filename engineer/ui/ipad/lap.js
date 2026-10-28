@@ -12,7 +12,7 @@
 (() => {
   const SECS = [1 / 3, 2 / 3];
   const MAX_PTS = 8000;
-  const L = { cur: null, laps: [], best: null, lapNo: null, xy: null, pts: null, dirty: true, lastFeed: 0, bestSec: [null, null, null], met: null };
+  const L = { cur: null, laps: [], best: null, lapNo: null, xy: null, pts: null, dirty: true, lastFeed: 0, bestSec: [null, null, null], met: null, parts: [] };
   const V = { lap: null, sel: null, hover: null, drag: null, lastTap: 0, stops: [] };   // what the screen is showing
   const newLap = (no) => ({ no, p: [], s: [], th: [], br: [], st: [], gr: [], t: [], dl: [], sec: [null, null, null], clean: true, start: null });
   const isNum = (x) => typeof x === "number" && isFinite(x);
@@ -43,6 +43,16 @@
   const reach = (lap) => (lap && lap.p.length ? lap.p[lap.p.length - 1] : 0);
   const split = (l, k) => (k === 0 ? l.sec[0] : k === 1 ? (l.sec[1] && l.sec[0] ? l.sec[1] - l.sec[0] : null) : l.sec[2]);
 
+  // 2026-10-28 (#321): the PC also keeps the sector times of laps that weren't clean full laps (a restart mid-lap, a
+  // pit stop, an off); the clean ones ("ok") count toward the best sectors, all of them show in the list
+  function bestSecs() {
+    return [0, 1, 2].map((k) => {
+      let b = null;
+      for (const l of L.laps) { const v = split(l, k); if (v && (b == null || v < b)) b = v; }
+      for (const x of L.parts) { const v = (x.split || [])[k], ok = (x.ok || [])[k]; if (ok && isNum(v) && v > 0 && (b == null || v < b)) b = v; }
+      return b;
+    });
+  }
   function viewLap() { return V.lap == null ? L.cur : (L.laps.find((l) => l.no === V.lap) || L.cur); }
   function refLap(me) {                              // your best clean lap; if you're studying the best, the next best
     if (!L.best) return null;
@@ -65,7 +75,7 @@
         if (done.sec[0] && done.sec[1]) done.sec[2] = t.last - done.sec[1];
         L.laps.unshift(done); if (L.laps.length > 12) L.laps.pop();
         if (!L.best || done.time < L.best.time) L.best = done;
-        L.bestSec = [0, 1, 2].map((k) => { let b = null; for (const l of L.laps) { const v = split(l, k); if (v && (b == null || v < b)) b = v; } return b; });
+        L.bestSec = bestSecs();
         renderList();
       }
       L.cur = newLap(t.lap); L.lapNo = t.lap; L.dirty = true;
@@ -418,7 +428,11 @@
   function renderList() {
     const box = $l("#lapList"); if (!box) return;
     const live = `<div class="lr live${V.lap == null ? " view" : ""}" data-no=""><span>LIVE</span><b>${L.cur && L.cur.p.length ? "Lap " + (L.lapNo ?? "") : "–"}</b><i></i><i></i><i></i></div>`;
-    box.innerHTML = live + (L.laps.map((l) => {
+    const rows = L.laps.map((l) => ({ no: l.no, l })).concat(L.parts.filter((x) => !L.laps.some((l) => l.no === x.no)).map((x) => ({ no: x.no, x })));
+    rows.sort((a, b) => (b.no || 0) - (a.no || 0));
+    box.innerHTML = live + (rows.map(({ l, x }) => {
+      if (x) return `<div class="lr part"><span>L${x.no}</span><b>part</b>` + [0, 1, 2].map((k) => { const v = (x.split || [])[k], ok = (x.ok || [])[k];
+        return `<i class="${ok && v && L.bestSec[k] && Math.abs(v - L.bestSec[k]) < 0.0005 ? "pb" : ok ? "" : "dim"}">${isNum(v) && v > 0 ? v.toFixed(2) : "–"}</i>`; }).join("") + `</div>`;
       const b = L.best === l;
       return `<div class="lr${b ? " best" : ""}${V.lap === l.no ? " view" : ""}" data-no="${l.no}"><span>L${l.no}</span><b>${fmt(l.time)}</b>` +
         [0, 1, 2].map((k) => { const v = split(l, k); return `<i class="${v && L.bestSec[k] && Math.abs(v - L.bestSec[k]) < 0.0005 ? "pb" : ""}">${v ? v.toFixed(2) : "–"}</i>`; }).join("") + `</div>`;
@@ -495,8 +509,9 @@
     if (!d || !Array.isArray(d.laps)) return;
     const mk = (l) => Object.assign(newLap(l.no), l, { dl: l.dl || [], st: l.st || [], gr: l.gr || [] });
     L.laps = d.laps.map(mk);
+    L.parts = Array.isArray(d.parts) ? d.parts.filter((x) => x && x.no != null) : [];
     L.best = L.laps.find((l) => l.no === d.best_no) || L.laps.reduce((b, l) => (l.time && (!b || l.time < b.time) ? l : b), null);
-    L.bestSec = [0, 1, 2].map((k) => { let b = null; for (const l of L.laps) { const v = split(l, k); if (v && (b == null || v < b)) b = v; } return b; });
+    L.bestSec = bestSecs();
     if (d.cur && d.lap_no != null && (L.lapNo == null || L.lapNo === d.lap_no) && (!L.cur || (d.cur.p || []).length > L.cur.p.length)) {
       const c = mk(d.cur); c.start = d.cur.start ?? (c.p.length ? c.p[0] : null);
       c.dl = c.p.map((p, i) => { const r = L.best ? timeAt(L.best, p) : null; return r != null ? c.t[i] - r : null; });
@@ -532,7 +547,12 @@
     idb((db) => { try { const r = db.transaction("s").objectStore("s").get("last"); r.onsuccess = () => { if (!gotPc && r.result && r.result.laps && r.result.laps.length) { IDB.key = r.result.key; load0(Object.assign({}, r.result, { cur: null })); } }; } catch (e) {} });
   }, 1500);
   function feedC(t) { const n = L.laps.length; feed(t); if (L.laps.length !== n) { cacheSave(true); renderList(); } }
-  window.LAP = { feed: feedC, draw, toggle, gap, load: loadPc, stops: setStops, _L: L, _V: V };
+  function setParts(d) {
+    if (!d || !Array.isArray(d.parts)) return;
+    L.parts = d.parts.filter((x) => x && x.no != null);
+    L.bestSec = bestSecs(); renderList(); L.dirty = true;
+  }
+  window.LAP = { feed: feedC, draw, toggle, gap, load: loadPc, stops: setStops, parts: setParts, _L: L, _V: V };
   for (const id of ["lapMap", "lapTrace"]) { const c = document.getElementById(id); if (c) RO.observe(c); }
   wire("lapMap", pctFromMap); wire("lapTrace", pctFromTrace);
   const btn = document.getElementById("lapBtn"); if (btn) btn.addEventListener("click", () => toggle());

@@ -22,6 +22,16 @@ KEEP_SESSIONS = 40
 SECS = (1 / 3, 2 / 3)
 MAX_PTS = 8000
 KEEP = 80                 # 2026-10-27: was 30 - a whole race's laps (Le Mans ~50) stay; a lap is ~2-3k points
+# 2026-10-28 (request #321: "maybe keep partial laps' sectors"): a lap that didn't make a clean full lap (the app
+# restarted mid-lap, a pit stop, an off) still keeps the sector times it really measured. A sector time is only kept
+# when both of its ends were crossed with samples a moment apart (never across a restart / gap), and it only counts
+# toward the best sectors when that whole sector was driven on track, off pit road, with no gap in the recording.
+GAP_S = 2.5               # more than this (lap clock) between two samples = a gap (same as the wall-clock gap rule);
+                          # no sector line is placed across it
+
+
+def _sector(pct):
+    return 0 if pct < SECS[0] else 1 if pct < SECS[1] else 2
 
 
 def _f(x):
@@ -33,7 +43,8 @@ def _f(x):
 
 
 def _new(no):
-    return {"no": no, "p": [], "s": [], "th": [], "br": [], "t": [], "st": [], "gr": [], "sec": [None, None, None], "clean": True, "start": None}
+    return {"no": no, "p": [], "s": [], "th": [], "br": [], "t": [], "st": [], "gr": [], "sec": [None, None, None], "clean": True, "start": None,
+            "sd": [False, False, False]}    # sd: sector k had a pit / off-track / gap / formation moment
 
 
 class LapStore:
@@ -41,6 +52,7 @@ class LapStore:
         self.log = log
         self.key = None
         self.laps, self.cur, self.lap_no = [], None, None
+        self.parts = []           # 2026-10-28: sector times of laps that weren't clean full laps (newest first)
         self.best_no = None
         self.met = False
         self._t = 0.0
@@ -91,6 +103,7 @@ class LapStore:
                 self.save(force=True)
             self.key = key
             self.laps, self.cur, self.lap_no, self.best_no = [], None, None, None
+            self.parts = []
             self.restore()
         self.met = bool(b.metric()) if hasattr(b, "metric") else False
         replay = bool(g("IsReplayPlaying", False))
@@ -131,24 +144,45 @@ class LapStore:
                 self.best_no = best["no"] if best else None
                 self._dirty = True
                 self.save(force=True)
+            elif d:
+                part = partial(d, last if lap == (d.get("no") or 0) + 1 else None, gapped or bool(d.get("resumed")))
+                if part:
+                    self.parts = [x for x in self.parts if x.get("no") != part["no"]]
+                    self.parts.insert(0, part)
+                    self.parts.sort(key=lambda x: -(x.get("no") or 0))
+                    del self.parts[KEEP:]
+                    self._dirty = True
+                    self.save(force=True)
             self.cur, self.lap_no = _new(lap), lap
         c = self.cur
-        if g("OnPitRoad", False) or (not replay and not g("IsOnTrack", False)) or gapped:
-            c["clean"] = False
+        sd = c.setdefault("sd", [False, False, False])      # laps saved before 2026-10-28 have no sd
+        bad = bool(g("OnPitRoad", False) or (not replay and not g("IsOnTrack", False)) or gapped)
         try:                     # 2026-10-26: the formation / parade lap (a race before the green) is never a lap
             if "race" in str(getattr(b, "sess_type", "") or "").lower() and 0 < int(g("SessionState", 0) or 0) < 4:
-                c["clean"] = False
+                bad = True
         except (TypeError, ValueError):
             pass
+        if bad:
+            c["clean"] = False
+            at = pct if pct is not None else (c["p"][-1] if c["p"] else None)
+            if at is not None:
+                sd[_sector(at)] = True
         if pct is None or cur is None:
             return
         if c["start"] is None:
             c["start"] = pct
+            if pct >= 0.06:      # recording began part-way round: the sectors before here weren't watched
+                for k in range(_sector(pct) + 1):
+                    sd[k] = True
         lastp = c["p"][-1] if c["p"] else -1
         if pct < lastp - 0.5 or pct <= lastp or len(c["p"]) >= MAX_PTS:
             return
+        hole = bool(c.pop("resumed", False) or gapped or (c["t"] and cur - c["t"][-1] > GAP_S) or (c["t"] and cur < c["t"][-1]))
+        if hole and lastp >= 0:  # a restart / gap between these two samples: every sector it spans wasn't watched
+            for k in range(_sector(lastp), _sector(pct) + 1):
+                sd[k] = True
         for k in range(2):
-            if not c["sec"][k] and 0 <= lastp < SECS[k] <= pct:
+            if not c["sec"][k] and 0 <= lastp < SECS[k] <= pct and not hole:
                 tl = c["t"][-1]
                 f = (SECS[k] - lastp) / ((pct - lastp) or 1)
                 c["sec"][k] = round(tl + (cur - tl) * f, 3)       # cumulative, like the iPad
@@ -169,14 +203,14 @@ class LapStore:
             tmp = PATH + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump({"key": self.key, "laps": self.laps, "cur": self.cur, "lap_no": self.lap_no, "best_no": self.best_no,
-                           "saved": now}, f, separators=(",", ":"))
+                           "parts": self.parts, "saved": now}, f, separators=(",", ":"))
             os.replace(tmp, PATH)
             # the session's own file too (the cache), and trim the oldest
             os.makedirs(DIR, exist_ok=True)
             mine = os.path.join(DIR, self._fname(self.key))
             tmp2 = mine + ".tmp"
             with open(tmp2, "w", encoding="utf-8") as f:
-                json.dump({"key": self.key, "laps": self.laps, "best_no": self.best_no, "saved": now}, f, separators=(",", ":"))
+                json.dump({"key": self.key, "laps": self.laps, "best_no": self.best_no, "parts": self.parts, "saved": now}, f, separators=(",", ":"))
             os.replace(tmp2, mine)
             files = sorted((os.path.join(DIR, n) for n in os.listdir(DIR) if n.endswith(".json")), key=os.path.getmtime, reverse=True)
             for old in files[KEEP_SESSIONS:]:
@@ -207,6 +241,7 @@ class LapStore:
             d["cur"], d["lap_no"] = None, None
         self.laps = d.get("laps") or []
         self.best_no = d.get("best_no")
+        self.parts = [x for x in (d.get("parts") or []) if isinstance(x, dict)][:KEEP]
         try:                     # 2026-10-27: laps rebuilt from a recording may sit in the session's cache file
             with open(os.path.join(DIR, self._fname(self.key)), encoding="utf-8") as f:
                 c = json.load(f)
@@ -223,6 +258,9 @@ class LapStore:
         self.cur, self.lap_no = d.get("cur"), d.get("lap_no")
         if self.cur:
             self.cur["clean"] = False
+            self.cur["resumed"] = True      # the next sample comes after the restart: no sector line across it
+            if not isinstance(self.cur.get("sd"), list):
+                self.cur["sd"] = [True, True, True]     # saved before sector checks existed: not known to be clean
         self.log(f"[laps] picked up {len(self.laps)} laps from before the restart")
 
     # ------------------------------------------------------------------ laps rebuilt from a recording (2026-10-27)
@@ -252,7 +290,49 @@ class LapStore:
 
     # ------------------------------------------------------------------ for the iPad
     def payload(self):
-        return {"key": self.key, "laps": self.laps, "best_no": self.best_no, "cur": self.cur, "lap_no": self.lap_no, "met": self.met}
+        return {"key": self.key, "laps": self.laps, "best_no": self.best_no, "cur": self.cur, "lap_no": self.lap_no, "met": self.met,
+                "parts": [x for x in self.parts if x.get("no") not in {l.get("no") for l in self.laps}]}
+
+    def best_sectors(self):
+        """Best S1 / S2 / S3 (seconds or None) from the clean full laps and the clean sectors of partial laps."""
+        out = [None, None, None]
+        for l in self.laps:
+            if not l.get("time") or not l.get("clean", True):
+                continue
+            sec = l.get("sec") or [None, None, None]
+            for k, v in enumerate(splits(sec)):
+                if v and (out[k] is None or v < out[k]):
+                    out[k] = v
+        for x in self.parts:
+            for k, (v, ok) in enumerate(zip(x.get("split") or [], x.get("ok") or [])):
+                if v and ok and (out[k] is None or v < out[k]):
+                    out[k] = v
+        return out
+
+
+def splits(sec):
+    """[cumulative S1, cumulative S2, S3] as stored on a lap -> [S1, S2, S3] sector times."""
+    s1, s2, s3 = (list(sec or []) + [None, None, None])[:3]
+    return [s1, round(s2 - s1, 3) if s1 and s2 and s2 > s1 else None, s3]
+
+
+def partial(d, last=None, gap_at_end=False):
+    """A lap that wasn't kept as a full lap -> its really measured sector times, or None if it measured none.
+    {"no", "split": [S1, S2, S3], "ok": [clean?] * 3, "src": "partial"}. S3 needs the lap's own LapLastLapTime
+    (`last`, only passed when the lap number went up by exactly one) and the lap watched to the line."""
+    sec = d.get("sec") or [None, None, None]
+    sd = list(d.get("sd") or [True, True, True]) + [True] * 3
+    s1, s2 = sec[0], sec[1]
+    S = [s1 if s1 and s1 > 0 else None, None, None]
+    if s1 and s2 and s2 > s1:
+        S[1] = round(s2 - s1, 3)
+    P = d.get("p") or []
+    if s2 and last and last > s2 and P and P[-1] > 0.94 and P[-1] >= SECS[1] and not gap_at_end:
+        S[2] = round(last - s2, 3)
+    if not any(S):
+        return None
+    ok = [bool(S[k]) and not sd[k] for k in range(3)]
+    return {"no": d.get("no"), "split": [round(v, 3) if v else None for v in S], "ok": ok, "src": "partial"}
 
 
 # ---------------------------------------------------------------------- rebuilding laps from a recording (2026-10-27)
