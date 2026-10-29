@@ -230,6 +230,7 @@ class Player:
         self.crowd = np.zeros((RATE * 2, 2), np.float32)   # 2 s ring
         self.cw = self.cr = 0
         self.crowd_on = False
+        self.underruns = self.skips = 0
         self.lock = threading.Lock()
 
     def device(self):
@@ -261,9 +262,10 @@ class Player:
             # crowd: wait for a 100 ms cushion once, then play continuously (only re-cushion after a real gap)
             avail = (self.cw - self.cr) % len(self.crowd)
             if avail > RATE:                              # fell far behind (clock drift): skip ahead
-                self.cr = (self.cw - int(0.1 * RATE)) % len(self.crowd)
-                avail = int(0.1 * RATE)
-            if not self.crowd_on and avail >= int(0.1 * RATE):
+                self.cr = (self.cw - int(0.2 * RATE)) % len(self.crowd)
+                avail = int(0.2 * RATE)
+                self.skips += 1
+            if not self.crowd_on and avail >= int(0.2 * RATE):     # 200 ms cushion (the two sound cards' clocks drift)
                 self.crowd_on = True
             if self.crowd_on:
                 if avail >= frames:
@@ -272,6 +274,7 @@ class Player:
                     self.cr = (self.cr + frames) % len(self.crowd)
                 else:
                     self.crowd_on = False                 # ran dry: build the cushion again
+                    self.underruns += 1
             # radio: one call at a time, centred
             if self.cur is None and self.calls:
                 self.cur, self.pos = self.calls.pop(0), 0
@@ -326,7 +329,13 @@ class Player:
                     raise ConnectionError("closed")
                 b += d
             return bytes(b)
+        last = time.time()
         while True:
+            if time.time() - last > 60:
+                last = time.time()
+                if self.underruns or self.skips:
+                    self.log(f"crowd gaps in the last minute: {self.underruns} ran dry, {self.skips} skipped ahead")
+                self.underruns = self.skips = 0
             kind, sr, ch, frames = HDR.unpack(read(HDR.size))
             if kind == 0:
                 continue
