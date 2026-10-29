@@ -229,6 +229,7 @@ class Player:
         self.cur, self.pos = None, 0
         self.crowd = np.zeros((RATE * 2, 2), np.float32)   # 2 s ring
         self.cw = self.cr = 0
+        self.crowd_on = False
         self.lock = threading.Lock()
 
     def device(self):
@@ -248,23 +249,29 @@ class Player:
 
     def add_crowd(self, b):
         n = len(b)
+        idx = (self.cw + np.arange(n)) % len(self.crowd)
         with self.lock:
-            for i in range(n):
-                self.crowd[(self.cw + i) % len(self.crowd)] = b[i]
+            self.crowd[idx] = b
             self.cw = (self.cw + n) % len(self.crowd)
 
     def render(self, out):
         frames = out.shape[0]
         out[:] = 0
         with self.lock:
-            # crowd: play what has arrived (keep ~100 ms behind the writer for jitter)
+            # crowd: wait for a 100 ms cushion once, then play continuously (only re-cushion after a real gap)
             avail = (self.cw - self.cr) % len(self.crowd)
-            if avail > int(0.1 * RATE) + frames or avail > RATE:
-                if avail > RATE:                          # fell far behind: skip ahead
-                    self.cr = (self.cw - int(0.1 * RATE) - frames) % len(self.crowd)
-                idx = (self.cr + np.arange(frames)) % len(self.crowd)
-                out += self.crowd[idx] * (10 ** (self.cfg["crowd_db"] / 20.0))
-                self.cr = (self.cr + frames) % len(self.crowd)
+            if avail > RATE:                              # fell far behind (clock drift): skip ahead
+                self.cr = (self.cw - int(0.1 * RATE)) % len(self.crowd)
+                avail = int(0.1 * RATE)
+            if not self.crowd_on and avail >= int(0.1 * RATE):
+                self.crowd_on = True
+            if self.crowd_on:
+                if avail >= frames:
+                    idx = (self.cr + np.arange(frames)) % len(self.crowd)
+                    out += self.crowd[idx] * (10 ** (self.cfg["crowd_db"] / 20.0))
+                    self.cr = (self.cr + frames) % len(self.crowd)
+                else:
+                    self.crowd_on = False                 # ran dry: build the cushion again
             # radio: one call at a time, centred
             if self.cur is None and self.calls:
                 self.cur, self.pos = self.calls.pop(0), 0
