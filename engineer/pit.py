@@ -41,6 +41,29 @@ IN_CAR = {
             ("front_lock", None): ("dcABS", "A B S one step up"),
             ("rear_lock", None): ("dcBrakeBias", "brake bias half a percent forward")},
 }
+# 2026-10-29 (car parity E9): when the car doesn't have the control a rule needs (no ABS, no TC), the next one that it
+# has - same words the crew already says for the GTP. A car with neither gets no in-car call for that problem.
+FALLBACK = {("front_lock", None): ("dcBrakeBias", "brake bias half a percent rearward"),
+            ("oversteer", "exit"): ("dcAntiRollRear", "rear bar one step softer"),
+            ("traction", None): ("dcAntiRollRear", "rear bar one step softer")}
+AID_OF = {"dcABS": "abs", "dcTractionControl": "tc", "dcTractionControl2": "tc"}
+
+
+def in_car_rule(kind, prob, phase, have, loose=True):
+    """The in-car change for a problem, or None. have(var) -> does this car have that dash control.
+    loose (the pit plan): any rule for the same problem if none for that phase; strict (in-car advice): as before."""
+    table = IN_CAR.get(kind) or IN_CAR["gt3"]
+    if loose:
+        cands = [table.get((prob, phase)), table.get((prob, None))] + [v for (p, ph), v in table.items() if p == prob]
+    else:
+        cands = [table.get((prob, phase)) or (table.get((prob, None)) if phase is None else None)]
+    cands += [FALLBACK.get((prob, phase)), FALLBACK.get((prob, None))]
+    for r in cands:
+        if r and have(r[0]):
+            return r
+    return None
+
+
 DASH = ["dcAntiRollFront", "dcAntiRollRear", "dcBrakeBias", "dcBrakeMisc", "dcTractionControl", "dcTractionControl2", "dcABS"]
 DASH_NAME = {"dcAntiRollFront": "front bar", "dcAntiRollRear": "rear bar", "dcBrakeBias": "brake bias", "dcBrakeMisc": "migration",
              "dcTractionControl": "T C", "dcTractionControl2": "T C 2", "dcABS": "A B S"}
@@ -85,6 +108,19 @@ class PitCrew:
 
     def kind(self):
         return "gtp" if self.b and self.b.is_gtp() else "gt3"
+
+    def has_control(self, var):
+        """Does this car have that dash control? Live: the variable is there. Not connected: the car table (an aid it
+        is known not to have is out, unknown counts as there - the old behaviour)."""
+        if self.g(var) is not None:
+            return True
+        if self.g("Speed") is not None:              # live telemetry and no such variable: the car doesn't have it
+            return False
+        if var in AID_OF and self.b:
+            from . import cars
+            d = (self.b.drivers().get(self.b.me(), {}) if hasattr(self.b, "drivers") else {}) or {}
+            return cars.aid(d.get("CarPath"), d.get("CarID"), AID_OF[var]) is not False
+        return True
 
     def metric(self):
         return bool(self.b and self.b.metric())
@@ -143,6 +179,8 @@ class PitCrew:
 
     # ---------------------------------------------------------------- the numbers
     def fuel_per_lap(self):
+        if getattr(self.b, "electric", False):
+            return None                             # electric car (car parity E15): no fuel figure
         xs = [u for _, _, c, u in self.stint if c and u]
         if not xs and self.b:
             # this session's laps, else (2026-10-26, #46) your usual here from earlier sessions until there is one
@@ -152,6 +190,8 @@ class PitCrew:
 
     def tank(self):
         di = (self.b.info("DriverInfo", {}) if self.b else {}) or {}
+        if getattr(self.b, "electric", False):
+            return None                             # electric car (car parity E15): no fuel tank
         try:
             return float(di.get("DriverCarFuelMaxLtr")) * float(di.get("DriverCarMaxFuelPct") or 1)
         except (TypeError, ValueError):
@@ -200,6 +240,8 @@ class PitCrew:
                 plan["fuel"], plan["fuel_why"] = round(need + 0.4, 1), "to the end"
             else:
                 plan["fuel"], plan["fuel_why"] = round(space, 1), "full, one more stop after this"
+        elif getattr(b, "electric", False):
+            plan["fuel"], plan["fuel_why"] = 0, "electric"   # car parity E15: nothing to fill
         else:
             plan["fuel"], plan["fuel_why"] = (round(tank - at_stop, 1) if tank else 999), "full tank"
         st = getattr(self, "strat", None)
@@ -232,8 +274,7 @@ class PitCrew:
             if plan["tyres"] and top[0] in ("understeer", "oversteer"):
                 end = "front" if top[0] == "understeer" else "rear"
                 plan["pressure"] = {"end": end, "psi": -0.5}
-            ic = IN_CAR[self.kind()].get(top) or IN_CAR[self.kind()].get((top[0], None)) or \
-                next((v for (p, ph), v in IN_CAR[self.kind()].items() if p == top[0]), None)
+            ic = in_car_rule(self.kind(), top[0], top[1], self.has_control)
             if ic:
                 plan["in_car"] = {"var": ic[0], "say": ic[1]}
         return plan

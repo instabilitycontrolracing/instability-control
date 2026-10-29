@@ -60,6 +60,11 @@ def class_name(drivers):
         n = (d.get("CarClassShortName") or "").strip()
         if n:
             return n
+    from . import cars                     # 2026-10-29 (car parity E12): known cars name their class from the car table
+    for d in drivers:
+        c = cars.of_driver(d)
+        if c is not None:
+            return c["cls"] or c["cls_text"]
     t = " ".join(f"{d.get('CarPath', '')} {d.get('CarScreenName', '')}" for d in drivers).lower()
     for keys, name in ((("gtp", "lmdh", "hybrid v8", "mhybrid", "lmh", "963", "v-series.r", "arx-06"), "GTP"),
                        (("lmp2", "dallara p217", "oreca"), "LMP2"), (("lmp3",), "LMP3"),
@@ -135,7 +140,7 @@ class Timing:
         try:
             tmp = PATH + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(data, f)
+                f.write(json.dumps(data))      # 2026-10-29: C encoder (json.dump is pure Python: ~20 ms a save), same text
             os.replace(tmp, PATH)
         except OSError:
             pass

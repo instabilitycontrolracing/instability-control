@@ -180,6 +180,13 @@ def load_or_make(Clip, own_clips, cache_dir, log=print):
 
 
 # ============================================================== when they play
+# Pit-stop recordings per class (2026-10-29, car parity E16). Only two real recordings exist (pit_gtp_*, pit_gt3_*):
+# the other prototypes (LMP2, LMP3) use the GTP stop, the other closed GT cars (GTD, GT4, GTE) the GT3 one. Classes with
+# no near match (TCR, Cup, touring ...) stay silent in the box (#222: nothing made up).
+PIT_CLIPS = {"gtp": "gtp", "lmp2": "gtp", "lmp3": "gtp", "gt3": "gt3", "gtd": "gt3", "gtd_pro": "gt3", "gt4": "gt3",
+             "gte": "gt3"}
+
+
 class Ambience:
     def __init__(self, director, clips, log=print):
         self.d, self.c, self.log = director, clips, log
@@ -391,9 +398,12 @@ class Ambience:
         st["since"] = st["since"] or self.d.now
         if not st["played"] and self.d.now - st["since"] > 0.6:   # stopped in the box: the crew goes to work
             st["played"] = True
-            cls = st["cls"] if st["cls"] in ("gtp", "gt3") else ("gt3" if st["cls"] in ("gtd", "gtd_pro") else st["cls"])
             idx = 1 + int(self.d.rnd.random() * 8)
-            stops = sorted(k for k in self.d.clips if k.lower().startswith(f"pit_{cls}_stop_")) if cls else []
+            stops = []
+            for cls in dict.fromkeys((st["cls"], PIT_CLIPS.get(st["cls"]))):   # its own recording first, then the near class
+                stops = sorted(k for k in self.d.clips if k.lower().startswith(f"pit_{cls}_stop_")) if cls else []
+                if stops:
+                    break
             if stops:
                 name = stops[idx % len(stops)]
                 st["go"] = name.replace("_stop_", "_go_")

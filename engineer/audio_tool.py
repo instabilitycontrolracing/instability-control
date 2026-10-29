@@ -107,6 +107,32 @@ CAR_VOICES = {
 }
 
 
+def voice_for(car_path):
+    """-> (voice key, voice). The car's own tuned voice; else (2026-10-29, car parity E4) a draft voice for its engine
+    type, worked out from the sourced cylinder count and Lovely Car Data's shift-light rpm the same way as the BMW's
+    (cars.voice_band); else the generic one. The two BMWs keep exactly what they had (Hybrid V8 voice / generic)."""
+    if car_path in CAR_VOICES:
+        return car_path, CAR_VOICES[car_path]
+    if car_path in ("bmwm4gt3", "bmwm4evogt3"):
+        return "", CAR_VOICES[""]
+    try:
+        from . import cars
+        band = cars.voice_band(car_path)
+    except Exception:
+        band = None
+    if not band:
+        return "", CAR_VOICES[""]
+    note = band["note"]
+    filters = [("engine", "LSC", 100, 3.0, 0.70),              # chest / weight (as the BMW voice)
+               ("engine", "PK", note, 5.0, 0.80),              # this engine's firing note
+               ("engine", "PK", min(2 * note, 4000), 1.5, 1.00)]   # 2nd harmonic: bite on the upshift
+    if note >= 330:
+        filters.append(("engine", "PK", 220, -1.0, 1.20))     # keeps the low-mids from going boxy (only clear of the note)
+    filters += [("detail", "PK", 2600, 4.0, 1.20), ("detail", "PK", 1600, 1.5, 2.00)]
+    name = f"{cars.engine_label(car_path) or str(band['cyl']) + '-cylinder'} draft ({band['rpm']} rpm shift light)"
+    return car_path, {"name": name, "filters": filters, "draft": True}
+
+
 class AudioMix:
     def __init__(self, log=print):
         self.log = log
@@ -182,7 +208,7 @@ class AudioMix:
                  "Device: Voicemeeter Input", "Stage: post-mix", "Channel: all"]
         # 2026-10-26: Voicemeeter Input ONLY. Naming the Yeti too made everything that reaches the Yeti through
         # Voicemeeter get this file a second time (request: "I never want to see the double correction again").
-        voice = CAR_VOICES.get(getattr(self, "voice", ""), CAR_VOICES[""])
+        voice = voice_for(getattr(self, "voice", ""))[1]
         if e <= 0 and t <= 0:
             lines.append("# off")
         else:
@@ -501,10 +527,22 @@ class AudioMix:
             self.last_error = str(e)[:160]
             self.log(f"[sound] {e!r}")
 
+    def _setup_state(self):
+        """Is Equalizer APO installed / hooked up (files + the whole render-device registry)? Asked twice a second
+        while the Sound page is open; it changes only when the driver installs something - checked every 5 s
+        (2026-10-29, efficiency). The live levels below stay twice a second."""
+        now = time.monotonic()
+        c = getattr(self, "_setup_c", None)
+        if c is None or now - c[0] > 5.0:
+            c = self._setup_c = (now, {"apo": os.path.exists(APO_CONFIG), "apo_hooked": self.apo_hooked(),
+                                       "tv_apo": self.cable_has_apo(), "tv_hooked": self._hooked_tv()})
+        return c[1]
+
     def state(self):
         vm = self._vm() is not None
-        st = {"voicemeeter": vm, "apo": os.path.exists(APO_CONFIG), "apo_hooked": self.apo_hooked(), "error": self.last_error,
-              "tv_apo": self.cable_has_apo(), "tv_hooked": self._hooked_tv(), "tv_on": bool(getattr(self, "_tv_on", False))}
+        su = self._setup_state()
+        st = {"voicemeeter": vm, "apo": su["apo"], "apo_hooked": su["apo_hooked"], "error": self.last_error,
+              "tv_apo": su["tv_apo"], "tv_hooked": su["tv_hooked"], "tv_on": bool(getattr(self, "_tv_on", False))}
         if vm:
             st["hp_db"] = self._get(f"Bus[{BUS_HP}].Gain")
             st["tv_db"] = self._get(f"Bus[{BUS_TV}].Gain")

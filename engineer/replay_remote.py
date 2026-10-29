@@ -126,12 +126,20 @@ class ReplayRemote:
             return
         prev = {}
         told = False
+        # 2026-10-29 (efficiency): Microsoft: "for performance reasons, don't call XInputGetState for an 'empty' user
+        # slot every frame ... space out checks for new controllers every few seconds". A connected pad is still read
+        # 60 times a second; the empty slots only every 2 s (a pad plugged in is picked up within 2 s).
+        empty_next = {}
         while self.running:
             time.sleep(1 / 60)
+            now = time.monotonic()
             for pad in range(4):
+                if pad not in prev and now < empty_next.get(pad, 0.0):
+                    continue
                 st = _STATE()
                 if xi.XInputGetState(pad, ctypes.byref(st)) != 0:
                     prev.pop(pad, None)
+                    empty_next[pad] = now + 2.0
                     continue
                 if not told:
                     told = True
@@ -142,6 +150,9 @@ class ReplayRemote:
                 lt = gp.bLeftTrigger > 120
                 prev[pad] = (b, lt)
                 try:
+                    # only a new press or a trigger change can do anything: ask iRacing only then (same result)
+                    if not ((b & ~p) or lt != self._slow):
+                        continue
                     if not self.allowed():
                         continue
                     for m in (A, B, X, Y, UP, DOWN, LEFT, RIGHT, BACK, LB, RB):

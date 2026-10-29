@@ -200,17 +200,23 @@ class LapStore:
             return
         self._save_t = now; self._dirty = False
         try:
+            # Efficiency (2026-10-29): json.dump() always uses Python's pure-Python encoder (~250 ms of the engine
+            # thread for a race's laps, holding the GIL - the radio / crowd audio waits behind it). json.dumps() with no
+            # indent uses the C encoder (same text, ~10x faster), and the laps / parts - the big part, the same in both
+            # files - are encoded once. The text written is byte-for-byte what json.dump wrote.
+            enc = lambda o: json.dumps(o, separators=(",", ":"))
+            k_, laps_, best_, parts_, saved_ = enc(self.key), self._laps_json(enc), enc(self.best_no), enc(self.parts), enc(now)
             tmp = PATH + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
-                json.dump({"key": self.key, "laps": self.laps, "cur": self.cur, "lap_no": self.lap_no, "best_no": self.best_no,
-                           "parts": self.parts, "saved": now}, f, separators=(",", ":"))
+                f.write('{"key":' + k_ + ',"laps":' + laps_ + ',"cur":' + enc(self.cur) + ',"lap_no":' + enc(self.lap_no)
+                        + ',"best_no":' + best_ + ',"parts":' + parts_ + ',"saved":' + saved_ + '}')
             os.replace(tmp, PATH)
             # the session's own file too (the cache), and trim the oldest
             os.makedirs(DIR, exist_ok=True)
             mine = os.path.join(DIR, self._fname(self.key))
             tmp2 = mine + ".tmp"
             with open(tmp2, "w", encoding="utf-8") as f:
-                json.dump({"key": self.key, "laps": self.laps, "best_no": self.best_no, "parts": self.parts, "saved": now}, f, separators=(",", ":"))
+                f.write('{"key":' + k_ + ',"laps":' + laps_ + ',"best_no":' + best_ + ',"parts":' + parts_ + ',"saved":' + saved_ + '}')
             os.replace(tmp2, mine)
             files = sorted((os.path.join(DIR, n) for n in os.listdir(DIR) if n.endswith(".json")), key=os.path.getmtime, reverse=True)
             for old in files[KEEP_SESSIONS:]:
@@ -220,6 +226,21 @@ class LapStore:
                     pass
         except OSError:
             pass
+
+    def _laps_json(self, enc):
+        """json.dumps(self.laps) - a finished lap never changes once it's in the list, so each lap's text is made once
+        (a 50-lap race: ~130 ms of the engine thread at every save -> a few ms)."""
+        cache = getattr(self, "_lap_txt", None)
+        if cache is None:
+            cache = self._lap_txt = {}
+        keep, parts = {}, []
+        for l in self.laps:
+            hit = cache.get(id(l))
+            txt = hit[1] if hit is not None and hit[0] is l else enc(l)
+            keep[id(l)] = (l, txt)
+            parts.append(txt)
+        self._lap_txt = keep
+        return "[" + ",".join(parts) + "]"
 
     @staticmethod
     def _fname(key):

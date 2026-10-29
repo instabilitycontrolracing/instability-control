@@ -327,6 +327,7 @@ class Mixer:
         self._tmp = np.zeros((n, 2), np.float32)
         self._abs = np.zeros((n, 2), np.float32)
         self._rl = np.zeros(n, np.float32); self._rr = np.zeros(n, np.float32); self._rm = np.zeros(n, np.float32)
+        self._lpb = np.zeros((n, 2), np.float32)
         self._base = (np.arange(n, dtype=np.float32) / n)
         self._i16 = np.float32(1 / 32768)
         # 2026-10-26 (#205): an echo under bridges / in tunnels (two taps + feedback), gliding in and out
@@ -494,7 +495,7 @@ class Mixer:
                     from scipy.signal import butter
                     self._hb, self._ha = butter(2, 1800, btype="low", fs=self.rate)
                     self._hz = np.zeros((2, 2))
-                lp = np.empty_like(mix)
+                lp = self._lpb[:frames]                 # 2026-10-29: buffer made once (this runs every block while driving)
                 for ch in range(2):
                     lp[:, ch], self._hz[:, ch] = _lfilter(self._hb, self._ha, mix[:, ch], zi=self._hz[:, ch])
                 h = self.helmet
@@ -852,6 +853,10 @@ class Director:
             self._track_pack(f)
         except Exception as e:
             self.log(f"[crowd] track sounds: {e!r}")
+        try:
+            self.heli_prepare()
+        except Exception:
+            pass
         self._prev_prog.clear(); self._motion.clear(); self._pair_cool.clear()
         self.green_seen = self.white_seen = self.chequer_seen = self.build_started = False
         self.passes_seen = self.crashes_seen = 0
@@ -1322,6 +1327,29 @@ class Director:
         c = self.get("helicopter_low_hover")
         if c is None:
             return None
+        # 2026-10-29 (efficiency): made ahead in a background thread when the track loads (heli_prepare) - it used to be
+        # made at the green flag itself, an FFT of the whole recording on the engine's thread just as the start plays.
+        # Same clip, same result; if it isn't ready yet it's made here as before.
+        pre = getattr(self, "_heli_pre", None)
+        if pre is not None and pre[0] is c:
+            self._heli_big = pre[1]
+        else:
+            self._heli_big = self._make_heli_big(c)
+        return self._heli_big
+
+    def heli_prepare(self):
+        """Background: make the bigger helicopter for the clip the green flag would use now (track packs included)."""
+        if getattr(self, "_heli_big", None) is not None:
+            return
+        c = self.get("helicopter_low_hover")
+        if c is None or (getattr(self, "_heli_pre", None) or (None,))[0] is c:
+            return
+        def run():
+            out = self._make_heli_big(c)
+            self._heli_pre = (c, out)
+        threading.Thread(target=run, daemon=True, name="crowd-heli").start()
+
+    def _make_heli_big(self, c):
         try:
             raw = np.asarray(c.data)
             x = raw.astype(np.float32) / (32768.0 if raw.dtype == np.int16 else 1.0)    # clips are kept as 16-bit
@@ -1341,11 +1369,10 @@ class Director:
             out *= (np.abs(x).max() + 1e-9) / (np.abs(out).max() + 1e-9) * 1.4   # +3 dB louder than the original peak
             out = np.clip(out, -0.98, 0.98)
             out = (out * 32767).astype(np.int16) if raw.dtype == np.int16 else out.astype(raw.dtype)
-            self._heli_big = Clip("helicopter_green_flyover", out, c.gain)
+            return Clip("helicopter_green_flyover", out, c.gain)
         except Exception as e:
             self.log(f"[crowd] heli_big: {e!r}")
-            self._heli_big = c
-        return self._heli_big
+            return c
 
     # ---------- ambience ----------
     def ambient(self, f):

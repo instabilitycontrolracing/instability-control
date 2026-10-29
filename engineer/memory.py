@@ -26,7 +26,14 @@ _LOCK = threading.Lock()
 
 # ---------------------------------------------------------------- car classes (for the similar-car fallback)
 def car_class(car_path="", class_name=""):
-    """'GT3', 'GTP', 'LMP2', 'LMP3', 'GT4', 'TCR' or '' - from DriverInfo CarClassShortName, else the car path."""
+    """'GT3', 'GTP', 'LMP2', 'LMP3', 'GT4', 'TCR' or '' - from DriverInfo CarClassShortName, else the car path.
+    2026-10-29 (car parity E11/E12): with no class name, a car in the car table answers from the table, so the Porsche
+    Cup cars are not 'GT3' and the 1980s Nissan GTP is not 'GTP' for the similar-car fallback."""
+    if not str(class_name or "").strip():
+        from . import cars
+        c = cars.lookup(car_path)
+        if c is not None:
+            return c["cls"] or ("TCR" if c["kind"] == "tcr" else "")
     for s in (str(class_name or ""), str(car_path or "")):
         s = s.lower().replace(" ", "").replace("-", "")
         if not s:

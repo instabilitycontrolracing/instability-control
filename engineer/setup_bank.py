@@ -4,7 +4,8 @@ No AI. Sources: iRacing's BMW M4 GT3 and BMW M Hybrid V8 manuals (+ Porsche/Cadi
 brake migration), see project doc mechanic-setup-rulebook.md. Directions that run "backwards" in iRacing
 are spelled out (e.g. GTP diff ramp angles: lower = more locking).
 
-Car kinds: "gtp" (M Hybrid V8), "gt3" (M4 GT3 / EVO), "other" (anything else, generic advice).
+Car kinds: "gtp" (M Hybrid V8), "gt3" (M4 GT3 / EVO), "other" (anything else, generic advice). Since 2026-10-29 the
+mechanic names more kinds (gt4, gte, lmp2, tcr, cup ...): they use the "other" table (TABLE / table_kind below).
 Each change: what to do, where to find it, which setup value to show (keys), and why.
 """
 
@@ -283,12 +284,33 @@ def current_values(sess):
     return out
 
 
-def bank_for(kind):
+# 2026-10-29 (car parity E7): car kinds -> the table they use. Only the GTP and GT3 tables come from car manuals (the
+# BMWs'); every other kind (GT4, GTE, LMP2, LMP3, TCR, Cup, touring, club, classic, electric ...) gets the generic advice.
+TABLE = {"gtp": "gtp", "gt3": "gt3"}
+AID_KEYS = {"abs": "abs", "tc": "tc", "tc1": "tc", "tc2": "tc"}
+
+
+def table_kind(kind):
+    return TABLE.get(kind or "", "other")
+
+
+def steps_for(problem, kind, aids=None):
+    """The fix list for one problem and car kind. aids = {'abs': bool|None, 'tc': bool|None}: steps for an aid the car
+    is known NOT to have are left out (car parity E9); unknown keeps them (they say "if the car has it" / "in the car")."""
+    tk = table_kind(kind)
+    steps = problem["fix"].get(tk) or problem["fix"]["other"]
+    aids = aids or {}
+    keep = [s for s in steps if not (AID_KEYS.get(s.get("key") or "") and aids.get(AID_KEYS[s["key"]]) is False)]
+    return keep or [s for s in problem["fix"]["other"] if not (AID_KEYS.get(s.get("key") or "") and aids.get(AID_KEYS[s["key"]]) is False)]
+
+
+def bank_for(kind, aids=None):
+    tk = table_kind(kind)
     probs = []
     for p in PROBLEMS:
-        steps = p["fix"].get(kind) or p["fix"]["other"]
+        steps = steps_for(p, kind, aids)
         probs.append({"id": p["id"], "area": p["area"], "label": p["label"], "check": p["check"], "wet": p["wet"],
-                      "steps": [dict(s, where=W[kind].get(s["where"], s["where"]) if s["where"] else None) for s in steps]})
+                      "steps": [dict(s, where=W[tk].get(s["where"], s["where"]) if s["where"] else None) for s in steps]})
     return {"areas": AREAS, "problems": probs}
 
 
@@ -308,9 +330,9 @@ def detected(sess):
     return [{"id": k, "corners": v} for k, v in sorted(out.items(), key=lambda kv: -len(kv[1]))]
 
 
-def as_text(kind):
+def as_text(kind, aids=None):
     """The whole bank as plain text, for the team AI's context."""
-    b = bank_for(kind)
+    b = bank_for(kind, aids)
     lines = []
     for p in b["problems"]:
         lines.append(f"{p['label']}: " + " | ".join(f"{i + 1}) {s['t']}" for i, s in enumerate(p["steps"])))

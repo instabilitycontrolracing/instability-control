@@ -27,6 +27,9 @@ async function suLoad(kind) {
   try { d = await api.setup_bank(kind); } catch (e) {}
   if (!d) return;
   SU.data = d; SU.kind = d.kind;
+  // car parity (2026-10-29): a GT4 / TCR / Cup ... car uses the generic table - the Other button shows its kind
+  const ob = document.querySelector('#suCar button[data-k="other"]');
+  if (ob) ob.textContent = (d.auto === "other" && d.kind_label && d.car_kind !== "other") ? d.kind_label : "Other";
   requestAnimationFrame(() => { suSeg("suCar", d.kind); suSeg("suCond", SU.cond); });
   suEl("suSrc").textContent = d.car ? (d.kind === d.auto ? `${d.car} · ${d.track}` : "No current values") : "No telemetry";
   const det = d.detected || [];

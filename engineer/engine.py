@@ -14,36 +14,75 @@ LANDMARKS = r"C:\Program Files (x86)\Britton IT Ltd\CrewChiefV4\trackLandmarksDa
 
 
 class IRacing:
-    """pyirsdk wrapper: src['Var'] and src.info('Section')."""
+    """pyirsdk wrapper: src['Var'] and src.info('Section').
+
+    Efficiency (2026-10-29): one engine tick reads the same frozen snapshot hundreds of times (the brain, racecraft,
+    timing, crowd, iPad... ~460 reads a tick, the CarIdx arrays of 64 values over and over). Each pyirsdk read unpacks
+    the variable's header and data again. Telemetry values read since the last freeze() are kept in a small memo, so a
+    value is unpacked once per tick. The snapshot is frozen, so the values are exactly what pyirsdk would return.
+    The memo is a fresh dict on every freeze (a reader on another thread can never put an old value into the new tick).
+    """
     def __init__(self, log):
         import irsdk
         self.ir, self.ok, self.log = irsdk.IRSDK(), False, log
+        self._memo = {}
 
     def check(self):
         if self.ok and not (self.ir.is_initialized and self.ir.is_connected):
             self.ir.shutdown(); self.ok = False
+            self._memo = {}
             self.log("iRacing closed. Waiting for iRacing...")
         elif not self.ok and self.ir.startup() and self.ir.is_initialized and self.ir.is_connected:
             self.ok = True
+            self._memo = {}
             self.log("iRacing found.")
         return self.ok
 
     def freeze(self):
+        self._memo = {}
         self.ir.freeze_var_buffer_latest()
 
     replay_test = False     # Settings: treat a replay of your own race as if you were driving it (for testing)
 
+    def _var(self, k):
+        m = getattr(self, "_memo", None)
+        if m is None:
+            m = self._memo = {}
+        try:
+            return m[k]
+        except KeyError:
+            pass
+        ir = self.ir
+        v = ir[k]
+        try:
+            if k in ir._var_headers_dict:          # telemetry only (session-info sections are cached by pyirsdk)
+                m[k] = v
+        except Exception:
+            pass
+        return v
+
     def __getitem__(self, k):
         if self.replay_test and k in ("IsOnTrack", "IsOnTrackCar"):
             try:
-                if self.ir["IsReplayPlaying"]:
+                if self._var("IsReplayPlaying"):
                     return True
             except Exception:
                 pass
-        return self.ir[k]
+        return self._var(k)
 
     def info(self, sec):
-        return self.ir[sec]
+        # ~70 calls a tick; pyirsdk re-checks the session-info counter on each. Kept for the rest of the tick too.
+        m = getattr(self, "_memo", None)
+        if m is None:
+            m = self._memo = {}
+        key = ("\x00info", sec)
+        try:
+            return m[key]
+        except KeyError:
+            pass
+        v = self.ir[sec]
+        m[key] = v
+        return v
 
     def close(self):
         try:
@@ -61,6 +100,7 @@ class Engine:
         self.voice.on_say = on_say
         self.voice.spotter = getattr(settings, "spotter_voice", "") or ""
         self.voice.driver_name = getattr(settings, "driver_name", "") or ""   # beta (2026-10-24): no name fallback
+        self.voice.driver_name_say = getattr(settings, "driver_name_say", "") or ""   # #542: how to say it
         self.corners = Corners(LANDMARKS, self.voice.blocks.get("corner", {}), exists=self.voice.clip_exists)
         self.brain = None
         self.on_tick = None          # extra work every tick (pit crew, iPad feed)
@@ -74,6 +114,7 @@ class Engine:
         self.voice.fx.set_strength(self.s.radio_strength)
         self.voice.spotter = getattr(self.s, "spotter_voice", "") or ""
         self.voice.driver_name = getattr(self.s, "driver_name", "") or ""     # beta (2026-10-24): no name fallback
+        self.voice.driver_name_say = getattr(self.s, "driver_name_say", "") or ""
         if self.brain:
             self.brain.s = self.s
 

@@ -502,6 +502,8 @@ class Racecraft:
         prev, self.wet_prev = self.wet_prev, wet
         if prev is None or not self.g("IsOnTrack", False):
             return
+        if self.g("dcTractionControl") is None and self.g("dcTractionControl2") is None and self.g("dcABS") is None:
+            return                     # 2026-10-29 (car parity E9): no TC and no ABS on this car - "go up on TC and ABS" is wrong
         if prev < 3 <= wet and self.once("wet_aids", 900):        # 3 = lightly wet
             self.b.later(4, lambda: self.say("wet_aids", prio=PRIO_RACE))
 

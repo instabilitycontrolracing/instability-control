@@ -107,7 +107,9 @@ class Shaker:
                     path = (me.get("CarPath") or "").lower()
                     self.state["cyl"] = 8 if ("lmdh" in path or "v8" in path) else 6
                 ir.freeze_var_buffer_latest()
-                g = lambda k, d=0.0: (ir[k] if ir[k] is not None else d)
+                def g(k, d=0.0, ir=ir):                        # 2026-10-29: one read per value (was two)
+                    v = ir[k]
+                    return v if v is not None else d
                 st = self.state
                 gear = int(g("Gear", 0) or 0)
                 if gear != st["gear"] and st["on"]:

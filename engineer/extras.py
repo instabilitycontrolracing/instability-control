@@ -608,6 +608,8 @@ class Extras:
 
     def tank(self):
         di = self.b.info("DriverInfo", {}) or {}
+        if getattr(self.b, "electric", False):
+            return None                             # electric car (car parity E15): no fuel tank
         try:
             return float(di.get("DriverCarFuelMaxLtr")) * float(di.get("DriverCarMaxFuelPct") or 1)
         except (TypeError, ValueError):

@@ -123,6 +123,7 @@ class Settings:
     hue_right_job: str = "both"
     hue_desk_job: str = "picture"
     hue_picture_fps: int = 4             # Hue light numbers to use, e.g. "1,2" (empty = all)
+    hue_picture_fps_driving: int = 2     # 2026-10-29 (efficiency): screen samples a second while you drive (live, in the car)
     snd_trackside_space: bool = True
     snd_driving_space: bool = True   # D4/D5 (#242/#243): your car echoes off the pit wall, bridges and tunnels # trackside / TV cameras: the circuit's reflections on the game's cars (#229)
     crowd_helmet: bool = True
@@ -174,6 +175,7 @@ class Settings:
     replay_test: bool = False
     # driver
     driver_name: str = ""            # first name the team uses; recorded lines with another name are skipped
+    driver_name_say: str = ""        # #542: the name typed the way it sounds ("Ahn-JEH-lo"), for the voice; "" = as written
     # general
     autostart_engine: bool = True    # start listening for iRacing as soon as the window opens
     start_with_windows: bool = False

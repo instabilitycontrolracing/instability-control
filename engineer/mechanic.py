@@ -39,6 +39,12 @@ def incar(tr, ch):
 
 
 def car_kind(sess):
+    """gtp, gt3, gt4, gte, lmp2, lmp3, tcr, cup, touring, club, classic, electric ... (car parity E8, 2026-10-29: known
+    cars from the car table; unknown ones as before: gtp / gt3 / other). The setup tables are setup_bank.TABLE."""
+    from . import cars
+    k = cars.kind(getattr(sess, "car_path", ""), getattr(sess, "car_id", None))
+    if k:
+        return k
     if sess.gtp:
         return "gtp"
     t = (sess.car_path + " " + sess.car_class).lower()
@@ -169,9 +175,12 @@ def diagnose(sess, max_laps=8):
 
 
 # ---------------------------------------------------------------- advice
-def _fix(kind, sym, phase, fast, S, tr):
-    """-> (main suggestion, alternative) as text with current values."""
+def _fix(kind, sym, phase, fast, S, tr, aids=None):
+    """-> (main suggestion, alternative) as text with current values. aids = {'abs': bool|None, 'tc': bool|None}:
+    a car known to have no ABS / TC never gets an ABS / TC suggestion (car parity E9)."""
     cur = lambda label, v: f" (now {v})" if v not in (None, "", "None") else ""
+    aids = aids or {}
+    no_abs, no_tc = aids.get("abs") is False, aids.get("tc") is False
     if kind == "gtp":
         farb, rarb = incar(tr, "dcAntiRollFront"), incar(tr, "dcAntiRollRear")
         bias = S("BrakePressureBias"); mig = S("BrakeBiasMigration"); wing = S("RearWingAngle")
@@ -194,6 +203,8 @@ def _fix(kind, sym, phase, fast, S, tr):
             ("oversteer", "exit"): (f"Traction control slip (TC2) one step up so it catches the rear earlier{cur('', tc2)}.",
                                     f"Or a little less diff preload{cur('', pre)}, or rear roll bar one step softer{cur('', rarb)}."),
         }
+        if no_tc:
+            table[("oversteer", "exit")] = (f"A little less diff preload{cur('', pre)}.", f"Or rear roll bar one step softer{cur('', rarb)}.")
     else:
         bias = S("BrakePressureBias", "BrakeBias"); wing = S("RearWingAngle", "RearWingPosition", "WingSetting")
         farb = S("FrontArb", "ArbBlades", "ArbSetting"); pre = S("Preload", "DiffPreload")
@@ -212,6 +223,10 @@ def _fix(kind, sym, phase, fast, S, tr):
             ("oversteer", "exit"): (f"Traction control one step more intervention{cur('', tc)}.",
                                     f"Or a little less diff preload{cur('', pre)}, or a softer rear anti-roll bar."),
         }
+        if no_abs:
+            table[("understeer", "entry")] = (f"Brake bias half a percent rearward{cur('', bias)}.", "Or a softer front anti-roll bar.")
+        if no_tc:
+            table[("oversteer", "exit")] = (f"A little less diff preload{cur('', pre)}.", "Or a softer rear anti-roll bar.")
     key = (sym, phase, fast) if phase == "mid" else (sym, phase)
     return table.get(key, (None, None))
 
@@ -225,6 +240,8 @@ def corner_advice(sess, corner_key):
     tr = sess._diag_tr
     S = lambda *n: setup_value(sess, *n)
     kind = car_kind(sess)
+    from . import cars
+    aids = cars.session_aids(sess)
     fast = float(np.median(e["speed"])) > 165
     notes = []
     for ph in ("entry", "mid", "exit"):
@@ -247,7 +264,7 @@ def corner_advice(sess, corner_key):
             if len(fastramp) >= max(1, len(e["ramp"]) // 2):
                 notes.append(f"Oversteer {where} ({n}/{e['laps']} laps): throttle too fast with lock on: technique. Unwind, then squeeze.")
                 continue
-        main, alt = _fix(kind, sym, ph, fast, S, tr)
+        main, alt = _fix(kind, sym, ph, fast, S, tr, aids)
         if main:
             notes.append(f"{sym.capitalize()} {where} ({n}/{e['laps']} laps, {'fast' if fast else 'slow'} corner). "
                          f"Try: {main} {alt or ''}".strip().replace("  ", " "))

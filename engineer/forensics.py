@@ -1403,6 +1403,12 @@ def setup_advice(sessions, sess=None):
     """Setup only when the same kind of mistake repeats (rulebook: technique first, 3+ times)."""
     from . import setup_bank as SB
     kind = "gtp" if (sess is not None and getattr(sess, "gtp", False)) else "gt3" if sess is not None and "gt3" in (sess.car_path + sess.car_class).lower() else "other"
+    aids = None
+    if sess is not None:                       # 2026-10-29 (car parity E7-E9): the car table's kind, no ABS/TC fixes it lacks
+        from . import cars
+        from .mechanic import car_kind
+        kind = SB.table_kind(car_kind(sess)) if cars.lookup(sess.car_path, getattr(sess, "car_id", None)) else kind
+        aids = cars.session_aids(sess)
     fam = {}
     for s in sessions:
         for e in s["episodes"]:
@@ -1416,7 +1422,7 @@ def setup_advice(sessions, sess=None):
         if not p:
             continue
         wet = sum(1 for e in es if e["wet"] not in ("dry", "mostly dry", "unknown")) >= len(es) / 2
-        fixes = p["fix"].get(kind) or p["fix"].get("other") or []
+        fixes = SB.steps_for(p, kind, aids)
         where = ", ".join(dict.fromkeys(e["corner_key"] for e in es))
         if len(es) >= 3:
             out.append({"problem": p["label"], "times": len(es), "where": where, "repeat": True,

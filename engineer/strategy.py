@@ -165,8 +165,23 @@ def ingest_session(sess, sid, path, mtime):
     return len(rows), len(srows)
 
 
-def backfill(sessions, progress=None, log=print):
-    """Read any telemetry files not in the database yet."""
+def _wait_idle(busy):
+    """Efficiency (2026-10-29): reading a telemetry file is seconds of busy Python (yaml + every channel) - never while
+    the driver is in the car; the rest is read as soon as he isn't."""
+    if busy is None:
+        return
+    import time
+    while True:
+        try:
+            if not busy():
+                return
+        except Exception:
+            return
+        time.sleep(2.0)
+
+
+def backfill(sessions, progress=None, log=print, busy=None):
+    """Read any telemetry files not in the database yet. busy() -> True while driving: waits between files."""
     from .telemetry import Session
     with _LOCK:
         c = db()
@@ -174,6 +189,7 @@ def backfill(sessions, progress=None, log=print):
         c.close()
     todo = [s for s in sessions if have.get(s["id"]) != s["mtime"]]
     for i, s in enumerate(todo):
+        _wait_idle(busy)
         try:
             se = Session(s["path"])
             ingest_session(se, s["id"], s["path"], s["mtime"])
@@ -186,11 +202,11 @@ def backfill(sessions, progress=None, log=print):
                 c = db(); c.execute("INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?,?,?)", (s["id"], s["path"], s["mtime"], "", "", "", 0, 0, "error")); c.commit(); c.close()
         if progress:
             progress(i + 1, len(todo))
-    backfill_events(sessions)
+    backfill_events(sessions, busy=busy)
     return len(todo)
 
 
-def backfill_events(sessions):
+def backfill_events(sessions, busy=None):
     """Race format/conditions for files stored before events were kept (reads only the file's header)."""
     from .telemetry import read_ibt, parse_yaml
     with _LOCK:
@@ -201,6 +217,7 @@ def backfill_events(sessions):
     for s in sessions:
         if s["id"] in have or s["id"] not in known:
             continue
+        _wait_idle(busy)
         try:
             _, si, _ = read_ibt(s["path"], channels=["Lap"])
             info = parse_yaml(si)

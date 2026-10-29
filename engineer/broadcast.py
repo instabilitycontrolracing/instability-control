@@ -57,7 +57,7 @@ class Link:
         if self.connected and getattr(self.s, "bcast_on", True) and getattr(self.s, "bcast_crowd", True):
             b = np.asarray(block, dtype=np.float32)
             if b.ndim == 2 and b.shape[1] == 2:
-                self._put(2, RATE, 2, b.copy())
+                self._put(2, RATE, 2, b)                 # _put copies it once into the message (the block is reused)
 
     def push_settings(self):
         if self.connected:
@@ -70,8 +70,14 @@ class Link:
                 pass
 
     def _put(self, kind, sr, ch, a):
+        # 2026-10-29 (efficiency): called from the audio callbacks - one copy of the samples straight into the message
+        # (was four: copy, astype, tobytes, header + data)
         try:
-            self.q.put_nowait(HDR.pack(kind, sr, ch, len(a) if ch == 1 else a.shape[0]) + a.astype(np.float32).tobytes())
+            a = np.ascontiguousarray(a, dtype=np.float32)
+            msg = bytearray(HDR.size + a.nbytes)
+            HDR.pack_into(msg, 0, kind, sr, ch, len(a) if ch == 1 else a.shape[0])
+            msg[HDR.size:] = memoryview(a).cast("B")
+            self.q.put_nowait(msg)
         except queue.Full:
             pass                                     # never hold up the headset audio
 
@@ -182,6 +188,19 @@ def broadcast_fx(x, sr, grit=1.0, db=6.0):
     return _loud(x, 10 ** (db / 20.0))
 
 
+_FIXED = {}
+
+
+def _fixed(fn, sr, seed):
+    """keyup_click / squelch_tail are the same every call (fixed seed): made once (they're read-only)."""
+    k = (fn.__name__, sr, seed)
+    if k not in _FIXED:
+        a = fn(sr, seed)
+        a.setflags(write=False)
+        _FIXED[k] = a
+    return _FIXED[k]
+
+
 def keyup_click(sr=RATE, seed=1):
     """Radio key-up: a short transmit click plus a burst of filtered static (~90 ms)."""
     rng = np.random.default_rng(seed)
@@ -215,7 +234,7 @@ def build_call(x, sr, grit=1.0, db=6.0, keyup=True):
     v = broadcast_fx(_resample(np.asarray(x, np.float32), sr), RATE, grit, db)
     if not keyup:
         return v
-    k, s = keyup_click(), squelch_tail()
+    k, s = _fixed(keyup_click, RATE, 1), _fixed(squelch_tail, RATE, 2)
     gap = np.zeros(int(0.03 * RATE), np.float32)
     return np.concatenate([k * 10 ** (db / 40.0), gap, v, s * 10 ** (db / 40.0)]).astype(np.float32)
 
@@ -250,10 +269,17 @@ class Player:
 
     def add_crowd(self, b):
         n = len(b)
-        idx = (self.cw + np.arange(n)) % len(self.crowd)
+        L = len(self.crowd)
         with self.lock:
-            self.crowd[idx] = b
-            self.cw = (self.cw + n) % len(self.crowd)
+            # 2026-10-29 (efficiency): two slice copies around the ring end instead of an index array per block
+            w, end = self.cw, (self.cw + n) % L
+            if n > L:                                 # never expected: only the newest 2 s survive, where they always went
+                w, b, n = (w + n - L) % L, b[-L:], L
+            k = min(n, L - w)
+            self.crowd[w:w + k] = b[:k]
+            if n > k:
+                self.crowd[:n - k] = b[k:]
+            self.cw = end
 
     def render(self, out):
         frames = out.shape[0]
@@ -269,9 +295,12 @@ class Player:
                 self.crowd_on = True
             if self.crowd_on:
                 if avail >= frames:
-                    idx = (self.cr + np.arange(frames)) % len(self.crowd)
-                    out += self.crowd[idx] * (10 ** (self.cfg["crowd_db"] / 20.0))
-                    self.cr = (self.cr + frames) % len(self.crowd)
+                    L, r, g = len(self.crowd), self.cr, 10 ** (self.cfg["crowd_db"] / 20.0)
+                    k = min(frames, L - r)
+                    out[:k] += self.crowd[r:r + k] * g
+                    if frames > k:
+                        out[k:frames] += self.crowd[:frames - k] * g
+                    self.cr = (r + frames) % L
                 else:
                     self.crowd_on = False                 # ran dry: build the cushion again
                     self.underruns += 1

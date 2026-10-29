@@ -34,7 +34,7 @@ def fmt_lap(t):
 def build_context(sess, cmp, lap_n, ref_label, section=None, mech_summary=None):
     """Compact fact sheet for the model."""
     lap = sess.lap(lap_n) if sess else None
-    lines = [f"Track: {sess.track_display}. Car: {sess.car}{' (GTP hybrid)' if sess.gtp else ''}.",
+    lines = [f"Track: {sess.track_display}. Car: {sess.car}{' (GTP hybrid)' if getattr(sess, 'hybrid', sess.gtp) else (' (GTP, no hybrid)' if sess.gtp else '')}.",
              f"Lap analysed: lap {lap_n}, {fmt_lap(lap and lap['time'])}. Reference: {ref_label}. " +
              (f"Total: {cmp['total']:+.3f} s vs reference." if cmp.get("total") is not None else
               f"Total: unknown. {cmp.get('delta_note') or 'Time gap not shown.'} Do NOT quote any time gained or lost; talk only about the driving numbers.")]
@@ -137,9 +137,15 @@ class Team:
             sess = ""
             try:
                 n = ir["SessionNum"]
-                for x in (ir["SessionInfo"] or {}).get("Sessions", []):
-                    if x.get("SessionNum") == n:
-                        sess = (x.get("SessionType") or "").lower()
+                # 2026-10-29 (efficiency): every results update in a race changes the SessionInfo text, and this
+                # second SDK reader re-parsed all of its YAML once a second - the engine has already parsed it and knows
+                # the session type (the app hands it over as sess_type_fn); parsed here only when it doesn't.
+                fn = getattr(self, "sess_type_fn", None)
+                sess = (fn(n) or "").lower() if fn else ""
+                if not sess:
+                    for x in (ir["SessionInfo"] or {}).get("Sessions", []):
+                        if x.get("SessionNum") == n:
+                            sess = (x.get("SessionType") or "").lower()
             except Exception:
                 pass
             if "race" in sess:

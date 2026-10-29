@@ -328,10 +328,8 @@ class Api:
     def _sim_running(self):
         """True while iRacing's sim is open (garage, menus, replays included). Cheap: checked every couple of minutes."""
         try:
-            import subprocess
-            r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq iRacingSim64DX11.exe", "/NH"], capture_output=True,
-                               text=True, timeout=10, creationflags=0x08000000)
-            return "iRacingSim64DX11.exe" in r.stdout
+            from .procs import is_running                # 2026-10-29: asks Windows directly (no tasklist process)
+            return is_running("iRacingSim64DX11.exe")
         except Exception:
             return False
 
@@ -793,8 +791,13 @@ class Api:
                        and v.get("track") == track_key], key=lambda kv: kv[1].get("date", ""))
         display = rows[0][1].get("track_display") if rows else getattr(self, "_track_disp", {}).get(track_key, track_key)
         cp = car_path.lower()
-        klass = ("GTP" if any(x in cp for x in ("lmdh", "gtp", "963", "499p", "vseriesr", "arx06", "valkyrie")) else
-                 "LMP2" if "p217" in cp or "dallarap" in cp else "GT3" if "gt3" in cp else "")
+        from . import cars as _cars                 # 2026-10-29 (car parity E12): known cars from the car table
+        _ce = _cars.lookup(car_path)
+        if _ce is not None:
+            klass = _ce["cls"] or _ce["cls_text"] or ""
+        else:
+            klass = ("GTP" if any(x in cp for x in ("lmdh", "gtp", "963", "499p", "vseriesr", "arx06", "valkyrie")) else
+                     "LMP2" if "p217" in cp or "dallarap" in cp else "GT3" if "gt3" in cp else "")
         ti = track_info(display, track_key)
         watch = list(ti["watch"]) if ti else []
         multi = (MULTICLASS_GTP if klass in ("GTP", "LMP2") else MULTICLASS_GT3 if klass == "GT3" else []) if len(S["classes"]) > 1 else []
@@ -1143,11 +1146,11 @@ class Api:
     # ---------- start other programs with iRacing (2026-10-26, DRE parity) ----------
     @staticmethod
     def _running_exes():
-        import subprocess
+        # 2026-10-29 (efficiency): every 4 s all race long this started a tasklist process; now one Windows call
+        # (procs.py - same lower-case .exe names; falls back to tasklist if that ever fails)
         try:
-            out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, timeout=8,
-                                 creationflags=0x08000000).stdout
-            return {line.split('","')[0].strip('"').lower() for line in out.splitlines() if line.startswith('"')}
+            from .procs import running_exes
+            return running_exes()
         except Exception:
             return set()
 
@@ -1351,8 +1354,14 @@ class Api:
         if getattr(self, "_team", None) is None:
             from .team import Team
             self._team = Team(self._s, log=self._log, emit=self._q.put)
+            self._team.sess_type_fn = self._sess_type_of          # 2026-10-29: no second SessionInfo parse
             self._team_hist = []
         return self._team
+
+    def _sess_type_of(self, n):
+        """The engine's session type for session number n ("" if the engine isn't on that session)."""
+        b = self._engine.brain if getattr(self, "_engine", None) else None
+        return (b.sess_type or "") if b is not None and b.sess_num == n else ""
 
     def team_open(self):
         t = self._team_obj(); t.start()
@@ -1616,6 +1625,13 @@ class Api:
         play_beep(self._s)
         return True
 
+    def name_test(self, name="", sounds_like=""):
+        """#542 Settings > Driver: hear how the team will say your name."""
+        if not self._engine:
+            return {"ok": False, "why": "Start the engineer first"}
+        ok = self._engine.voice.name_test(name or self._s.driver_name, sounds_like or getattr(self._s, "driver_name_say", ""))
+        return {"ok": bool(ok), "why": "" if ok else "The stand-in voice isn't available on this PC"}
+
     def spot_test(self):
         """Settings > Sound: hear the spotter."""
         from .voice import PRIO_URGENT
@@ -1653,9 +1669,9 @@ class Api:
         if not car or car == getattr(self, "_car_now", None):
             return
         self._car_now = car
-        from .audio_tool import CAR_VOICES
+        from .audio_tool import voice_for
         mix = self._audio_mix()
-        new_voice = car if car in CAR_VOICES else ""
+        new_voice, vobj = voice_for(car)              # car parity E4 (2026-10-29): engine-type draft voice where sourced
         voice_changed = getattr(mix, "voice", "") != new_voice
         mix.voice = new_voice
         prof = (self._s.snd_car_profiles or {}).get(car) or self.CAR_SOUND_DEFAULTS.get(car)
@@ -1668,7 +1684,7 @@ class Api:
             self._s.snd_engine, self._s.snd_detail = e, d
             self._s.save()
             mix.apply(self._s, "snd_engine")
-            self._log(f"[sound] car sound for {car} ({CAR_VOICES[new_voice]['name']} voice): engine {e}, detail {d}")
+            self._log(f"[sound] car sound for {car} ({vobj['name']} voice): engine {e}, detail {d}")
 
     def _sound_guard_loop(self):
         """Keeps Windows' default output on Voicemeeter Input whether or not iRacing is open (Apollo moves it to CABLE)."""
@@ -1726,7 +1742,7 @@ class Api:
             try:
                 from .strategy import backfill
                 from .telemetry import list_sessions
-                backfill(list_sessions(), log=self._log)
+                backfill(list_sessions(), log=self._log, busy=self._driving_now)
             except Exception as e:
                 self._log(f"[strategy] {e!r}")
             finally:
@@ -1747,13 +1763,17 @@ class Api:
             w.kick()
         return bool(w)
 
+    def _driving_now(self):
+        """True while you're driving (live, not a replay) - the same test the telemetry vault waits on."""
+        return time.time() - getattr(self, "_drive_t", 0) < 5
+
     def _strategy_backfill(self):
         """Store every saved telemetry file in the strategy database (only new ones; first time takes a minute)."""
         try:
             time.sleep(8)
             from .strategy import backfill
             from .telemetry import list_sessions
-            n = backfill(list_sessions(), log=self._log)
+            n = backfill(list_sessions(), log=self._log, busy=self._driving_now)
             if n:
                 self._log(f"[strategy] stored {n} sessions")
         except Exception as e:
@@ -2348,9 +2368,16 @@ class Api:
                         continue
             except Exception:
                 se = None
-        auto = car_kind(se) if se else "gt3"
+        # 2026-10-29 (car parity E7): the car's own kind (GT4, TCR, Cup ...) picks its table (gtp / gt3 / other); the
+        # Other button shows the kind's name, and fixes for an aid the car doesn't have (ABS / TC) are left out
+        from .setup_bank import table_kind
+        from . import cars as _cars
+        car_k = car_kind(se) if se else "gt3"
+        auto = table_kind(car_k)
         k = kind or auto
-        out = {"kind": k, "auto": auto, "bank": bank_for(k)}
+        aids = _cars.session_aids(se) if (se is not None and k == auto) else None
+        out = {"kind": k, "auto": auto, "car_kind": car_k, "kind_label": _cars.KIND_LABEL.get(car_k, "Other"),
+               "bank": bank_for(k, aids)}
         if se is not None:
             out.update(car=se.car, track=se.track_display, values=current_values(se) if k == auto else {},
                        detected=detected(se) if k == auto else [])
@@ -2496,7 +2523,7 @@ class Api:
             calls = [l for l in lines if " ENGINEER:" in l or " YOU:" in l][-60:]
             st = dict(self._engine.status) if self._engine else {}
             s = asdict(self._s)
-            for k in ("device", "mic_device", "remote_token", "radio_button", "team_button", "binds", "driver_name"):
+            for k in ("device", "mic_device", "remote_token", "radio_button", "team_button", "binds", "driver_name", "driver_name_say"):
                 s.pop(k, None)                                   # nothing personal in the report
             info = {"version": VERSION, "time": stamp, "session": st, "settings": s}
             with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:

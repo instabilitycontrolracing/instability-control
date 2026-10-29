@@ -91,7 +91,9 @@ class Recorder:
                         if time.time() - idle_since > 3.0:
                             self._save(cur); cur = None; idle_since = None
                 ir.unfreeze_var_buffer_latest()
-                time.sleep(0.008)
+                # 2026-10-29 (efficiency): nothing to record (the usual case while you drive - iRacing writes its own file -
+                # and in menus): look 10 times a second instead of at every one of the sim's 60 updates
+                time.sleep(0.008 if cur is not None else 0.1)
             except Exception as e:
                 self.log(f"[recorder] {e!r}")
                 try:

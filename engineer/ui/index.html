@@ -1320,7 +1320,10 @@ body.idle *, body.idle *::before, body.idle *::after { animation-play-state: pau
           <h3>Driver</h3>
           <div class="row"><span class="name" style="font:600 15px Inter;min-width:110px">Your first name</span>
             <input class="ask" id="driverName" maxlength="24" placeholder="First name"></div>
-          <p class="note" style="margin:10px 0 0">The team calls you by this name. Recorded lines with a different name are skipped.</p>
+          <div class="row" style="margin-top:8px"><span class="name" style="font:600 15px Inter;min-width:110px">Sounds like</span>
+            <input class="ask" id="driverNameSay" maxlength="40" placeholder="e.g. An-JEH-lo (optional)">
+            <button class="btn" id="driverNameHear" style="margin-left:8px">Hear it</button></div>
+          <p class="note" style="margin:10px 0 0">The team calls you by this name. If the voice says it wrong, type it the way it sounds (split it into parts, CAPITALS for the loud part) and press Hear it until it's right. Recorded lines with a different name are skipped.</p>
         </div>
         <!-- 2026-10-26: start other programs with iRacing (DRE parity) -->
         <div class="card">

@@ -96,21 +96,27 @@ class Buttons:
             self.log(f"[buttons] no controller support: {e}")
             return
         self.ok = True
-        devs, last_scan, state = {}, 0, {}
+        devs, last_scan, state, names = {}, 0, {}, {}
         while True:
             now = time.time()
             if now - last_scan > 3:  # pick up a wheel or button box plugged in later
                 last_scan = now
+                was = set(devs)
                 devs.clear()
                 for i in range(min(n_dev, 16)):
                     info = _JOYINFOEX(ctypes.sizeof(_JOYINFOEX), JOY_RETURNBUTTONS)
                     if winmm.joyGetPosEx(i, ctypes.byref(info)) != 0:
+                        names.pop(i, None)
                         continue
-                    caps = _JOYCAPSW()
-                    name = f"Controller {i + 1}"
-                    if winmm.joyGetDevCapsW(i, ctypes.byref(caps), ctypes.sizeof(caps)) == 0:
-                        name = _oem_name(caps.wMid, caps.wPid) or caps.szPname.strip() or name
-                    devs[i] = name
+                    # 2026-10-29 (efficiency): a device that stayed plugged in keeps its name - the driver query and the
+                    # registry lookup only run for a newly seen one (they ran for every device every 3 s)
+                    if i not in was or i not in names:
+                        caps = _JOYCAPSW()
+                        name = f"Controller {i + 1}"
+                        if winmm.joyGetDevCapsW(i, ctypes.byref(caps), ctypes.sizeof(caps)) == 0:
+                            name = _oem_name(caps.wMid, caps.wPid) or caps.szPname.strip() or name
+                        names[i] = name
+                    devs[i] = names[i]
                 # same name twice (two identical boxes): number them
                 seen = {}
                 for i in sorted(devs):

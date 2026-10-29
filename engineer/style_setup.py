@@ -186,7 +186,8 @@ def build(car_path=None, limit=6, sessions=None, open_fn=None, log=print):
 
     # ---- the sheet: the rulebook's first fix per weakness that doesn't fight one already chosen
     kind = kind or "other"
-    bank = {p["id"]: p for p in setup_bank.bank_for(kind)["problems"]}
+    from . import cars
+    bank = {p["id"]: p for p in setup_bank.bank_for(kind, cars.session_aids(latest) if latest is not None else None)["problems"]}
     vals = setup_bank.current_values(latest) if latest is not None else {}
     tmap = {t["k"]: t for t in traits}
     chosen, knobs, changes = set(), {}, []

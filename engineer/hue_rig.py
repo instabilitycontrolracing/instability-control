@@ -125,6 +125,7 @@ class HueRig:
     # ---------- every tick ----------
     def update(self, flags, driving):
         self._last_update = time.monotonic()
+        self._driving = bool(driving)
         if not self.active():
             if self._saved:
                 self._restore()
@@ -196,11 +197,20 @@ class HueRig:
                     if prev is not None:                                           # smooth, no flicker
                         c = np.array(prev) * 0.5 + c * 0.5
                     self._pic[role] = tuple(int(v) for v in c)
-                time.sleep(1.0 / max(1, int(self.opt("hue_picture_fps", 4))))
+                time.sleep(1.0 / self._picture_fps())
             except Exception as e:
                 self.status = f"picture: {str(e)[:60]}"
                 sct = None
                 time.sleep(2.0)
+
+    def _picture_fps(self):
+        """Screen samples a second. 2026-10-29 (efficiency): each sample copies three big screen areas out of the GPU's
+        picture (GDI BitBlt) - while you drive (live, in the car) at most hue_picture_fps_driving (2) a second; replays,
+        menus and the TV camera keep the full rate."""
+        fps = max(1, int(self.opt("hue_picture_fps", 4)))
+        if getattr(self, "_driving", False):
+            fps = min(fps, max(1, int(self.opt("hue_picture_fps_driving", 2))))
+        return fps
 
     # ---------- the network side ----------
     def _sender(self):

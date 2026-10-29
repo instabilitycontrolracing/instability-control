@@ -185,6 +185,11 @@ CAR_NOTES = {
     "bmwlmdh": ["No ABS: front lock = pink lights.", "Brake migration and bias from the wheel."],
     "bmwm4gt3": ["ABS and TC: use the dials, don't fight them."],
 }
+# 2026-10-29 (car parity E2): every other car with a verified CarPath gets its short, sourced notes from the car table
+from . import cars as _cars
+for _p, _c in _cars.BY_PATH.items():
+    if _c["notes"]:
+        CAR_NOTES.setdefault(_p, list(_c["notes"]))
 
 
 def week_now(today=None):

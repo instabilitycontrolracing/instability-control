@@ -37,6 +37,7 @@ class Remote:
     def __init__(self, api, port=8770, token="", log=print):
         self.api, self.port, self.token, self.log = api, port, token, log
         self.clients = []                      # queues, one per open iPad page
+        self._only = {}                        # id(queue) -> the event kinds that page asked for (None = all but timing)
         self.lock = threading.Lock()
         self.last = None
         self._t_last = 0
@@ -280,6 +281,7 @@ class Remote:
         q = queue.Queue(maxsize=200)
         with self.lock:
             self.clients.append(q)
+            self._only[id(q)] = only
         try:
             # retry: the browser's own reconnect delay; then everything that changes rarely
             h.wfile.write(b"retry: 2000\n\n")
@@ -316,6 +318,7 @@ class Remote:
             with self.lock:
                 if q in self.clients:
                     self.clients.remove(q)
+                self._only.pop(id(q), None)
 
     @staticmethod
     def _enc(kind, data):
@@ -385,7 +388,9 @@ class Remote:
                 self.log(f"[laps] parts: {e!r}")
         self._parts_n = np_
         self._parts_top = self.laps.parts[0].get("no") if np_ else None
-        if self.clients and now - self._tm_last >= 0.5:
+        # Efficiency (2026-10-29): the timing table (60 cars, ~4 ms) and the telemetry frame are only built while an open
+        # page actually takes them - the iPad dashboard never takes "timing", the timing page never takes "t"
+        if self.clients and now - self._tm_last >= 0.5 and self._wanted("timing"):
             self._tm_last = now
             try:
                 self.timing_last = self.timing.build(brain)
@@ -395,16 +400,30 @@ class Remote:
         if not self.clients or now - self._t_last < 0.1:
             return
         self._t_last = now
-        try:
-            snap = self.snapshot(brain, pit)
-        except Exception as e:
-            snap = {"err": repr(e)}
-        self.last = snap
-        self.push("t", snap)
+        if self._wanted("t"):
+            try:
+                snap = self.snapshot(brain, pit)
+            except Exception as e:
+                snap = {"err": repr(e)}
+            self.last = snap
+            self.push("t", snap)
+        elif self.last is None:
+            self.last = {}                      # "a session was live" - so "off" still goes out when iRacing closes
         tn = (brain.info("WeekendInfo", {}) or {}).get("TrackName")
         if tn != self._track:
             self._track = tn
             self.push("full", self.snapshot_full())
+
+    def _wanted(self, kind):
+        """Does any open page take this kind of event? (a page that isn't listed - e.g. a test's queue - takes all)"""
+        with self.lock:
+            cl = list(self.clients)
+            only = dict(getattr(self, "_only", {}) or {})
+        for q in cl:
+            o = only.get(id(q))
+            if (kind != "timing") if not o else (kind in o):
+                return True
+        return False
 
     def _drivers(self, b):
         key = b.g("SessionInfoUpdate", 0)

@@ -87,7 +87,7 @@ function makeMock() {
     calls_pitlane: true, calls_drivers: true, low_sr_warn: true, calls_health: true, calls_fuel_extras: true,
     calls_practice_traffic: true, calls_sectors: true, calls_weather: true, calls_tyres: true, shift_beep: false, shift_pitch: 1400, shift_volume: 0.25, shift_point: 1.0, shift_length: 60, race_control: true, race_control_volume: 0.8, overlay_radio: true,
     lap_readout: [], binds: {}, chat_enabled: true, low_sr_below: 2, low_sr_rookies: false, sector_alert: 0.35,
-    traffic_warn: 2.5, press_unit: "psi", press_step: 1, driver_name: "",
+    traffic_warn: 2.5, press_unit: "psi", press_step: 1, driver_name: "", driver_name_say: "",
     calls_racecraft: true, calls_fight_coach: true, pit_tones: true, hold_for_chat: true, net_warnings: true, auto_telemetry: true, fuel_buffer_laps: 0, vault_on: true, vault_drive_on: true, vault_drive_quota_gb: 8, vault_dir: "", vault_drive_dir: "G:\\My Drive\\Instability Control\\Telemetry",
     sig_overlap: false, sig_spray: false, sig_revlimit: false, sig_launch: false,
     crowd_on: true, crowd_volume: 0.3, crowd_max_db: -18, crowd_mute: false, crowd_pa: true, crowd_heli: true, crowd_heli_cabin: true, crowd_ambience: true, crowd_mute_pits: true, crowd_duck: true,
@@ -691,6 +691,12 @@ async function initUI(state) {
   const dn = $("#driverName");
   dn.value = S.driver_name || "";
   dn.addEventListener("change", () => { const v = dn.value.trim(); S.driver_name = v; api.set("driver_name", v); toast(v ? "Name saved" : "Name cleared"); });
+  const dns = $("#driverNameSay");   // #542: how the voice should say it
+  dns.value = S.driver_name_say || "";
+  dns.addEventListener("change", () => { const v = dns.value.trim(); S.driver_name_say = v; api.set("driver_name_say", v); toast(v ? "Saved - press Hear it" : "Cleared - said as written"); });
+  $("#driverNameHear").addEventListener("click", async () => {
+    try { const r = await api.name_test(dn.value.trim(), dns.value.trim()); toast(r && r.ok ? "Listen…" : ((r && r.why) || "Couldn't play it")); } catch (e) { toast("Couldn't play it"); }
+  });
   $("#report").addEventListener("click", async () => {
     toast("Saving the report…");
     try { const r = await api.report_problem(); toast(r && r.ok ? "Report saved to your Desktop" : "Couldn't save the report"); } catch (e) { toast("Couldn't save the report"); }

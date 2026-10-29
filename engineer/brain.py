@@ -201,21 +201,67 @@ class Brain:
         return self.g("PlayerCarIdx", self.info("DriverInfo", {}).get("DriverCarIdx", 0))
 
     def drivers(self):
+        # Efficiency (2026-10-29): called ~20 times a tick (class order, neighbours, timing, racecraft...). pyirsdk hands
+        # back the same DriverInfo object until the session info really changes, so the table is built once per
+        # DriverInfo and each caller gets its own shallow copy (callers may add to / pop from theirs).
+        di = self.info("DriverInfo", {})
+        c = getattr(self, "_drv_cache", None)
+        if c is not None and c[0] is di:
+            return dict(c[1])
         out = {}
-        for d in self.info("DriverInfo", {}).get("Drivers", []) or []:
+        for d in di.get("Drivers", []) or []:
             if d.get("IsSpectator") or d.get("CarIsPaceCar"):
                 continue
             out[d["CarIdx"]] = d
-        return out
+        if di:                                          # never cache the {} stand-in (a new one each call anyway)
+            self._drv_cache = (di, out)
+        return dict(out)
+
+    def _tick_memo(self):
+        """A dict that lives for one frozen iRacing snapshot (engine.IRacing's memo), or None when the source has none
+        (tests, replays of recordings): answers worked out only from the snapshot are kept in it for the rest of the
+        tick. 2026-10-29 (efficiency): neighbours() alone was asked ~1.5 times a tick, each a walk over the field."""
+        m = getattr(self.src, "_memo", None)
+        if not isinstance(m, dict):
+            return None
+        c = getattr(self, "_tm", None)
+        if c is None or c[0] is not m:
+            c = self._tm = (m, {})
+        return c[1]
 
     def my_class(self):
+        tm = self._tick_memo()
+        if tm is not None:
+            r = tm.get("my_class")
+            if r is None:
+                r = tm["my_class"] = self._my_class()
+            return r
+        return self._my_class()
+
+    def _my_class(self):
         d = self.drivers().get(self.me(), {})
         return d.get("CarClassID"), d.get("CarClassShortName") or d.get("CarScreenNameShort", "")
 
     def is_gtp(self):
+        """Modern GTP class (2026-10-29, car parity E11: known cars from the car table - the 1980s Nissan GTP ZX-T is
+        not one; unknown cars by the old word match)."""
+        from . import cars
         d = self.drivers().get(self.me(), {})
         t = f"{d.get('CarClassShortName', '')} {d.get('CarPath', '')} {d.get('CarScreenName', '')}".lower()
-        return any(k in t for k in ("gtp", "lmdh", "hybrid v8", "mhybrid"))
+        return cars.is_gtp(d.get("CarPath"), d.get("CarID"), t)
+
+    def is_hybrid(self):
+        """GTP with a hybrid: deploy / regen / battery lines. The Valkyrie has no hybrid (iRacing's page)."""
+        from . import cars
+        d = self.drivers().get(self.me(), {})
+        t = f"{d.get('CarClassShortName', '')} {d.get('CarPath', '')} {d.get('CarScreenName', '')}".lower()
+        return cars.is_hybrid(d.get("CarPath"), d.get("CarID"), t)
+
+    def is_electric(self):
+        """The Porsche Mission R (car parity E15): no fuel, so no fuel calls."""
+        from . import cars
+        d = self.drivers().get(self.me(), {})
+        return cars.is_electric(d.get("CarPath"), d.get("CarID"))
 
     def session(self):
         ss = self.info("SessionInfo", {}).get("Sessions", []) or []
@@ -260,6 +306,15 @@ class Brain:
 
     def neighbours(self):
         """(car ahead idx, gap s, car behind idx, gap s) in my class, race order."""
+        tm = self._tick_memo()
+        if tm is not None:
+            r = tm.get("neighbours")
+            if r is None:
+                r = tm["neighbours"] = self._neighbours()
+            return r
+        return self._neighbours()
+
+    def _neighbours(self):
         me = self.me(); cid, _ = self.my_class(); mp = self.class_pos(me)
         if not mp:
             return None, None, None, None
@@ -310,6 +365,8 @@ class Brain:
 
     def fuel_lap_est(self):
         """Fuel per lap: this session's laps, or your usual here from earlier sessions until there are some."""
+        if getattr(self, "electric", False):
+            return None                            # electric car: no fuel figure, so no fuel calls or fuel plans
         if self.fuel_laps:
             xs = self.fuel_laps[-4:]
             return sum(xs) / len(xs)
@@ -344,7 +401,8 @@ class Brain:
             self.reset_session()
             self.sess_num = n
             self.sess_type = self.session().get("SessionType", "")
-            self.v.gtp = self.is_gtp()
+            self.v.gtp = self.is_hybrid()          # the voice's {GTP:...} parts are hybrid / deploy lines
+            self.electric = self.is_electric()
             self.v.fuel_metric = self.metric()
             tn = self.info("WeekendInfo", {}).get("TrackName")
             if tn and tn != self.track_loaded and self.c:
@@ -755,7 +813,7 @@ class Brain:
         clean = t > 0 and not pitted and not self.caution_on
         if clean:
             self.lap_times.append(t)
-        if self.fuel_at_line is not None and fuel is not None and clean:
+        if self.fuel_at_line is not None and fuel is not None and clean and not getattr(self, "electric", False):
             used = self.fuel_at_line - fuel
             if used > 0.05:
                 self.fuel_laps.append(used)
@@ -910,7 +968,7 @@ class Brain:
         return True
 
     def fuel_call(self, lc, ltg):
-        if len(self.fuel_laps) < 2 or ltg is None:
+        if len(self.fuel_laps) < 2 or ltg is None or getattr(self, "electric", False):
             return
         per = sum(self.fuel_laps[-4:]) / len(self.fuel_laps[-4:])
         fuel = self.g("FuelLevel", 0) or 0

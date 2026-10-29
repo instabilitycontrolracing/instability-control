@@ -260,6 +260,11 @@ def layer_json(layers):
 
 def sim_running():
     try:
+        from .procs import is_running                   # 2026-10-29: no tasklist process
+        return is_running(SIM_EXE)
+    except Exception:
+        pass
+    try:
         out = subprocess.run(["tasklist", "/FO", "CSV", "/NH", "/FI", f"IMAGENAME eq {SIM_EXE}"], capture_output=True,
                              text=True, timeout=8, creationflags=NO_WINDOW).stdout
         return SIM_EXE in out.lower()

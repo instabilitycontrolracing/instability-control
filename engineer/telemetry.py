@@ -240,8 +240,11 @@ def _sid(path, st=None):
     return hashlib.md5(f"{os.path.basename(path)}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:12]
 
 
-CAR_NAMES = {"bmwlmdh": "BMW M Hybrid V8", "bmwm4gt3": "BMW M4 GT3", "bmwm4evogt3": "BMW M4 GT3 EVO",
-             "bmwm2g87": "BMW M2", "bmwm4gt4": "BMW M4 GT4"}
+# 2026-10-29 (car parity E1): every Sports Car / Prototype with a verified CarPath (cars.py). The BMWs keep their old
+# names; "bmwm4evogt3" was dropped (not a real folder: the M4 GT3 EVO kept the bmwm4gt3 CarPath, Lovely Car Data) and the
+# M4 G82 GT4 Evo (bmwm4evogt4) was added.
+from . import cars as _cars
+CAR_NAMES = _cars.names()
 
 
 def car_name(path_name):
@@ -338,12 +341,20 @@ class Session:
         self.car_path = me.get("CarPath") or os.path.basename(path).split("_")[0]
         self.car = me.get("CarScreenName") or car_name(self.car_path)
         self.car_class = me.get("CarClassShortName") or ""
+        self.car_id = me.get("CarID")
         tl = str(wk.get("TrackLength", "0 km"))
         self.track_len = float(tl.split()[0]) * (1609.34 if "mi" in tl else 1000.0)
         if landmarks is None:
             landmarks = track_landmarks(self.track_name)
         self.setup = self.info.get("CarSetup", {}) or {}
-        self.gtp = any(k in (self.car_path + " " + self.car_class).lower() for k in ("lmdh", "gtp"))
+        # 2026-10-29 (car parity E11): known cars from the car table (the Nissan GTP ZX-T is a 1980s car, not a GTP
+        # hybrid; the Valkyrie is a GTP without a hybrid), unknown ones by the old word match
+        if _cars.lookup(self.car_path, self.car_id) is not None:
+            self.gtp = _cars.is_gtp(self.car_path, self.car_id)
+        else:
+            self.gtp = any(k in (self.car_path + " " + self.car_class).lower() for k in ("lmdh", "gtp"))
+        self.hybrid = self.gtp and _cars.is_hybrid(self.car_path, self.car_id, self.car_class)
+        self.electric = _cars.is_electric(self.car_path, self.car_id)
         self._split_laps()
         self._traces = {}
         self.landmarks = landmarks

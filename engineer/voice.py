@@ -270,6 +270,7 @@ class Voice:
         self.new = lines_new.table()     # written but not rendered yet -> stand-in voice
         self.last_said = None            # (sid, fills) of the last line played, for "say again"
         self.driver_name = ""            # the name the team uses; recorded variants that say another name are skipped
+        self.driver_name_say = ""        # #542: how the stand-in voice should SAY that name (typed the way it sounds); "" = as written
         self.recorded_name = self.m.get("recorded_name") or _recorded_name(self.m)   # the name the library was recorded with
         self.gtp, self.fuel_metric, self.corners = gtp, fuel_metric, corners
         self.log, self.volume = log, volume
@@ -341,8 +342,9 @@ class Voice:
         n = (self.driver_name or "").strip().lower()      # beta (2026-10-24): no name set = skip the named variants
         return n == rec or not re.search(r"\b" + re.escape(rec) + r"\b", (text or "").lower())
 
-    def _standin(self, sid, fills, texts=None):
-        """A line that isn't recorded yet, said by the stand-in voice. (audio, text) or (None, None)."""
+    def _standin(self, sid, fills, texts=None, say=None):
+        """A line that isn't recorded yet, said by the stand-in voice. (audio, text) or (None, None).
+        say=(name, sounds_like) (#542): the text shows the name as written, the voice says it the way the driver typed it sounds."""
         vs = texts or self.new.get(sid)
         if not vs:
             return None, None
@@ -367,7 +369,10 @@ class Voice:
             text = re.sub(r"\s*\{GTP:[^}]*\}", "", text)
         text = text.replace("{GTP:", "").replace("}", "")
         from . import standin
-        a = standin.synth(text, self.sr)
+        spoken = text
+        if say and say[0] and say[1] and say[0].strip().lower() != say[1].strip().lower():
+            spoken = re.sub(r"(?i)\b" + re.escape(say[0].strip()) + r"\b", say[1].strip(), text)
+        a = standin.synth(spoken, self.sr)
         if a is None:
             return None, text
         lead = np.zeros(int(0.05 * self.sr), np.float32)
@@ -475,7 +480,8 @@ class Voice:
                 nm = (self.driver_name or "").strip() or "driver"
                 pick = [ln for ln in named if ln.get("lang", "en") == "en"] or named
                 rx = r"(?i)\b" + re.escape(self.recorded_name.strip()) + r"\b"
-                return self._standin(sid, fills, texts=[re.sub(rx, nm, ln["text"]) for ln in pick])
+                return self._standin(sid, fills, texts=[re.sub(rx, nm, ln["text"]) for ln in pick],
+                                     say=(nm, (self.driver_name_say or "").strip()))
             return None, None
         last = self._last_variant.get(sid)
         pick = [o for o in opts if o[0]["variant"] != last] or opts
@@ -519,6 +525,28 @@ class Voice:
             exp = time.time() + (max_age if max_age else (2.0 if prio == PRIO_SPOTTER else 30.0))
             heapq.heappush(self._q, (prio, next(self._seq), sid, fills or {}, exp))
             self._cv.notify()
+
+    def name_test(self, name, sounds_like=""):
+        """#542 Settings > Driver "Hear it": the stand-in voice says the name the way it will on the radio. False when the
+        stand-in voice isn't available on this PC. Runs in its own thread, waits for the shared radio like any line."""
+        from . import standin
+        word = (sounds_like or "").strip() or (name or "").strip()
+        if not word:
+            return False
+        a = standin.synth(word + ".", self.sr)
+        if a is None:
+            return False
+        lead = np.zeros(int(0.05 * self.sr), np.float32)
+        audio = _loud(self.fx(np.concatenate([lead, a, lead])), self.volume)
+        def run():
+            if not RADIO.take(self.player, PRIO_INFO, timeout=5.0):
+                return
+            try:
+                self.player.play(audio, PRIO_INFO)
+            finally:
+                RADIO.give(self.player)
+        threading.Thread(target=run, daemon=True).start()
+        return True
 
     def say_now(self, sid, fills=None, max_age=20.0):
         """Race control (2026-10-25): plays right now - stops whatever this voice or any other voice is saying, jumps

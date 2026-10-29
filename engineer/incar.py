@@ -223,7 +223,6 @@ class InCar:
 
     def advise(self, prob=None, phase=None, reported=False, asked=False):
         """One in-car change for the problem (measured, or what the driver said). Returns True if said."""
-        from .pit import IN_CAR
         if prob is None:
             d = self.diagnosis()
             if not d or d[0] is None:
@@ -234,8 +233,9 @@ class InCar:
             prob, phase, _, st = d
         else:
             st = (self.diagnosis() or (None, None, 0, {}))[3] or {}
-        table = IN_CAR[self.kind()]
-        rule = table.get((prob, phase)) or (table.get((prob, None)) if phase is None else None)
+        from .pit import in_car_rule
+        # 2026-10-29 (car parity E9): only a control this car has (no ABS call on a car without ABS)
+        rule = in_car_rule(self.kind(), prob, phase, lambda var: self.g(var) is not None, loose=False)
         sv0 = {("understeer", "entry"): 3, ("understeer", "mid"): 4, ("understeer", "exit"): 5,
                ("oversteer", "entry"): 6, ("oversteer", "mid"): 7, ("oversteer", "exit"): 8}.get((prob, phase))
         if not rule:

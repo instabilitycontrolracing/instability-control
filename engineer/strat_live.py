@@ -164,6 +164,8 @@ class Strategist:
         if self.car and self.track and (force or self.m is None or (self.last_lc or 0) - self._m_at >= 5):
             try:
                 self.m = S.model(self.car, self.track)
+                if self.m and getattr(self.b, "electric", False):
+                    self.m = dict(self.m, fuel_lap=None)   # electric car (car parity E15): no fuel figure, no fuel plans
                 self._m_at = self.last_lc or 0
             except Exception as e:
                 self.log(f"[strategy] model: {e!r}")
@@ -171,6 +173,8 @@ class Strategist:
 
     def tank(self):
         di = self.b.info("DriverInfo", {}) or {}
+        if getattr(self.b, "electric", False):
+            return None                             # electric car (car parity E15): no fuel tank
         try:
             return float(di.get("DriverCarFuelMaxLtr")) * float(di.get("DriverCarMaxFuelPct") or 1)
         except (TypeError, ValueError):

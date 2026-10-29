@@ -19,7 +19,13 @@ def _norm(s):
     return k[:-5] if len(k) > 5 and k.endswith("CLASS") else k
 
 
-def from_car_name(s):
+def from_car_name(s, path=None, car_id=None):
+    """Last resort. 2026-10-29 (car parity E12): a car in the car table answers from the table (the Porsche Cup cars and
+    the Supercars are not GT3, the 1980s Nissan GTP ZX-T is not a modern GTP - those have no recorded class name: None)."""
+    from . import cars
+    c = cars.lookup(path, car_id)
+    if c is not None:
+        return c["cls"]
     s = str(s or "").lower()
     if any(k in s for k in ("gtp", "lmdh", "hybrid v8", "499p", "963", "arx-06", "v-series")): return "GTP"
     if "lmp2" in s or "p217" in s: return "LMP2"
@@ -44,7 +50,15 @@ def label(d):
         cid = 0
     if cid in IDS:
         return IDS[cid]
-    return from_car_name(f"{d.get('CarScreenName') or ''} {d.get('CarPath') or ''}")
+    return from_car_name(f"{d.get('CarScreenName') or ''} {d.get('CarPath') or ''}", d.get("CarPath"), d.get("CarID"))
+
+
+def text(d):
+    """Class for the SCREEN only (never spoken): our label, iRacing's own short name, else the car table's class
+    (TCR, Cup (Porsche), Supercars ...)."""
+    from . import cars
+    d = d or {}
+    return label(d) or d.get("CarClassShortName") or cars.class_text(d.get("CarPath"), d.get("CarID")) or None
 
 
 def spoken(d):
