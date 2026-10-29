@@ -11,7 +11,7 @@ messages - no key presses, no extra software):
   LB / RB  previous / next incident     LT (hold)  slow motion
   Y        jump to live (the end)       View/Back  jump to the start of the session
   X        flag this moment for the highlight reel (Grandstand's highlight markers / OBS clip)
-  Start/Menu (the three lines)  MusicBee play / pause - ALWAYS, also while driving and without iRacing
+  Right stick click (R3)        MusicBee play / pause - ALWAYS, also while driving and without iRacing
                                 (2026-10-29, Angelo: "one of the unused buttons to be the play/pause button for musicbee
                                 at all times"); only MusicBee is told, never the other players
 
@@ -23,6 +23,8 @@ import ctypes, glob, json, os, subprocess, threading, time, urllib.request
 A, B, X, Y = 0x1000, 0x2000, 0x4000, 0x8000
 UP, DOWN, LEFT, RIGHT = 0x0001, 0x0002, 0x0004, 0x0008
 BACK, START, LB, RB = 0x0020, 0x0010, 0x0100, 0x0200
+L3, R3 = 0x0040, 0x0080
+MUSIC = R3          # 2026-10-29: right stick click (Start is taken by Steam's desktop controller mode)
 SPEEDS = [2, 4, 8, 16]
 # iRacing replay search modes (irsdk_RpySrchMode)
 TO_START, TO_END, PREV_LAP, NEXT_LAP, PREV_INC, NEXT_INC = 0, 1, 4, 5, 8, 9
@@ -177,7 +179,7 @@ class ReplayRemote:
                     # only a new press or a trigger change can do anything: ask iRacing only then (same result)
                     if not ((b & ~p) or lt != self._slow):
                         continue
-                    if (b & START) and not (p & START):     # music: always (driving or not, iRacing or not)
+                    if (b & MUSIC) and not (p & MUSIC):     # music: always (driving or not, iRacing or not)
                         threading.Thread(target=self.music, daemon=True).start()
                     if not self.allowed():
                         continue
