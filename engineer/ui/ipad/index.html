@@ -600,6 +600,31 @@ body.tmmode #timing { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .me::before, .bar.flagged .flagwash::before, #slot.air::after, .pit.ask::after { animation: none; }
 }
+
+/* #514 guided garage */
+.gbtn { margin-left: auto; font: 600 11px Inter; letter-spacing: .08em; text-transform: uppercase; color: #12141a; background: var(--gold2); border: 0; border-radius: 6px; padding: 5px 10px; }
+.guide { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: rgba(5,7,12,.72); backdrop-filter: blur(6px); }
+.guide.on { display: flex; }
+.gbox { width: min(760px, 94vw); max-height: 88vh; display: flex; flex-direction: column; background: #10141d; border: 1px solid rgba(216,180,106,.35); border-radius: 14px; padding: 18px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.ghead { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.gtitle { font: 700 20px Inter; color: var(--ivory); }
+.gsub { font: 500 13px Inter; color: var(--gold2); margin-top: 4px; }
+.gclose { margin-left: auto; background: transparent; color: var(--t2); border: 1px solid var(--t4); border-radius: 8px; padding: 6px 12px; font: 600 13px Inter; }
+.glist { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.gstep { display: grid; grid-template-columns: 34px 1fr auto auto; align-items: center; gap: 12px; text-align: left; width: 100%; background: #171c27; border: 1px solid #252c3a; border-radius: 10px; padding: 12px; color: var(--ivory); font: 500 16px Inter; }
+.gstep .gn { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 700 14px Inter; background: #252c3a; color: var(--t2); }
+.gstep .gt small { display: block; margin-top: 3px; font: 500 12px Inter; color: var(--t3); }
+.gstep .gv { font: 600 15px var(--num); color: var(--t2); white-space: nowrap; }
+.gstep .gv b { color: var(--ivory); }
+.gstep .gs { font: 700 11px Inter; letter-spacing: .1em; color: var(--t3); white-space: nowrap; }
+.gstep.done { border-color: rgba(52,210,123,.55); background: rgba(52,210,123,.08); }
+.gstep.done .gn { background: var(--green); color: #08120c; }
+.gstep.done .gs { color: var(--green); }
+.gstep.check { border-color: rgba(255,201,60,.6); background: rgba(255,201,60,.08); }
+.gstep.check .gs { color: var(--yellow); }
+.gstep.manual .gs { color: var(--gold2); }
+.gwhy { color: var(--t2); font: 500 15px Inter; }
+.gfoot { margin-top: 12px; font: 500 12px Inter; color: var(--t3); }
 </style>
 </head>
 <body class="boot idle">
@@ -675,7 +700,7 @@ body.tmmode #timing { display: block; }
           <div class="kv"><span>Tank</span><b id="fNow">–</b><span>Per lap</span><b id="fLap">–</b><span>To go</span><b id="ltg">–</b><span>Time left</span><b id="left">–</b></div></div>
         <div class="fspark"><canvas id="fuelSpark"></canvas><span class="fs-l" id="fuelSparkL"></span></div>
       </section>
-      <section class="card" style="--i:4"><h4>Car</h4>
+      <section class="card" style="--i:4"><h4>Car<button class="gbtn" id="guideBtn" title="Your 'My style' setup changes, ticked off as you make them in the garage">Garage guide</button></h4>
         <div class="dash" id="dash" data-empty="Car settings appear when you're in the car"></div>
       </section>
     </div>
@@ -733,6 +758,7 @@ body.tmmode #timing { display: block; }
 <script src="bg.js"></script>
 <script src="lap.js"></script>
 <script src="wheel.js"></script>
+<script src="guide.js"></script>
 <script>
 (() => {   // TIMING button: the timing / session screen fills the iPad; its DASHBOARD button comes back here
   const box = document.getElementById("timing"), btn = document.getElementById("tmBtn");
@@ -746,5 +772,10 @@ body.tmmode #timing { display: block; }
   addEventListener("message", (e) => { if (e.data && e.data.timing === "close") open(false); });
 })();
 </script>
+<div id="guide" class="guide"><div class="gbox">
+  <div class="ghead"><div><div class="gtitle">Garage guide · My style</div><div class="gsub" id="guideSub"></div></div><button class="gclose" id="guideClose">Close</button></div>
+  <div class="glist" id="guideList"></div>
+  <div class="gfoot">Each change turns green by itself when iRacing shows it (garage values update when you click Apply). Tap the ones iRacing doesn't report.</div>
+</div></div>
 </body>
 </html>

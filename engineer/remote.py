@@ -166,6 +166,10 @@ class Remote:
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
                     return self._json(remote.snapshot_full())
+                if u.path == "/api/setupguide":                   # #514: the guided garage checklist
+                    if not self._ok(q):
+                        return self._send(403, b"no key", "text/plain")
+                    return self._json(remote.api.setup_guide_status())
                 path = urllib.parse.unquote(u.path)
                 if path.startswith("/ipad/"):
                     rel = path[len("/ipad/"):] or "index.html"
@@ -207,6 +211,16 @@ class Remote:
                     elif act == "clear":
                         out["ok"] = a.pit_clear()
                     out["state"] = a.pit_state()
+                elif u.path == "/api/setupguide":                 # #514: start / tick / stop the guided garage
+                    act = body.get("action")
+                    if act == "start":
+                        out = a.setup_guide_start()
+                    elif act == "tick":
+                        out = a.setup_guide_tick(body.get("i", -1), body.get("on", True))
+                    elif act == "stop":
+                        out = a.setup_guide_stop()
+                    else:
+                        out = a.setup_guide_status()
                 elif u.path == "/api/ask":
                     t = (body.get("text") or "").strip()
                     if t:

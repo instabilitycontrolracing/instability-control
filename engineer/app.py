@@ -2309,10 +2309,51 @@ class Api:
         """2026-10-28 (#491): a setup built around how you drive (style_setup.py), for the car of your newest recording."""
         from .style_setup import build
         try:
-            return build(car_path, log=self._log)
+            out = build(car_path, log=self._log)
+            if out.get("ok"):
+                self._style_last = out                     # #514: the guided garage starts from this sheet
+            return out
         except Exception as e:
             self._log(f"[style setup] {e!r}")
             return {"ok": False, "why": "Couldn't read your telemetry."}
+
+    # ---- #514 (2026-10-29): guided garage - the "My style" sheet ticked off as iRacing reports each change
+    def _guide_obj(self):
+        g = getattr(self, "_guide", None)
+        if g is None:
+            from .setup_guide import Guide
+            g = self._guide = Guide()
+        return g
+
+    def _guide_brain(self):
+        eng = self._engine
+        return eng.brain if eng else None
+
+    def setup_guide_start(self):
+        sheet = getattr(self, "_style_last", None) or self.style_setup()
+        if not sheet or not sheet.get("ok") or not sheet.get("changes"):
+            return {"active": False, "why": (sheet or {}).get("why") or "No changes on your style sheet."}
+        self._log(f"[setup guide] started: {len(sheet['changes'])} change(s) for {sheet.get('car')}")
+        return self._guide_obj().start(sheet["changes"], self._guide_brain(), sheet.get("car", ""))
+
+    def setup_guide_status(self):
+        g = getattr(self, "_guide", None)
+        if g is None or not g.active:
+            return {"active": False}
+        try:
+            return g.status(self._guide_brain())
+        except Exception as e:
+            self._log(f"[setup guide] {e!r}")
+            return {"active": False}
+
+    def setup_guide_tick(self, i, on=True):
+        self._guide_obj().tick(int(i), bool(on))
+        return self.setup_guide_status()
+
+    def setup_guide_stop(self):
+        self._guide_obj().stop()
+        self._log("[setup guide] closed")
+        return {"active": False}
 
     def toggle_max(self):
         if not self._win:

@@ -210,7 +210,7 @@ def build(car_path=None, limit=6, sessions=None, open_fn=None, log=print):
                 tech = tmap["throttle"]["detail"]
             elif w["ph"] == "entry" and "attack" in tmap and tmap["attack"]["v"] < 0.12:
                 tech = tmap["attack"]["detail"]
-            changes.append({"t": st["t"], "where": st.get("where"), "now": vals.get(st.get("key")) if st.get("key") else None,
+            changes.append({"t": st["t"], "where": st.get("where"), "key": st.get("key"), "now": vals.get(st.get("key")) if st.get("key") else None,
                             "why": why, "style": tech, "rule": st.get("why") or "", "for": w["label"]})
             knobs[knob] = way; chosen.add(pid)
             break

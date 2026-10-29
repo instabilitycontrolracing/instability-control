@@ -126,5 +126,24 @@ async function suStyle() {
   if (d.changes.length) h += `<div class="su-card fix"><div class="lbl">Your setup, in this order</div>${d.changes.map((c, i) => `<div class="su-chg"><span class="n">${i + 1}</span><span class="t">${suEsc(c.t)}</span>${c.now ? `<span class="now">now ${suEsc(c.now)}</span>` : ""}
       ${c.where ? `<div class="whr">${suEsc(c.where)}</div>` : ""}<span class="why">${suEsc(c.why)} ${suEsc(c.rule)}</span>${c.style ? `<span class="sty">Your style: ${suEsc(c.style)}</span>` : ""}</div>`).join("")}</div>`;
   h += `<div class="su-card"><div class="lbl">Mechanic</div>${d.notes.map((n) => `<p>${suEsc(n)}</p>`).join("")}</div>`;
-  suShow(h).querySelector(".su-back").addEventListener("click", suArea);
+  // #514: iRacing's setup files can't be written, so the engineer walks you through it in the garage instead
+  if (d.changes.length) h += `<div class="su-card"><button class="btn sm gold" id="suGuide">Guide me in the garage</button>
+      <p id="suGuideMsg" style="margin-top:8px">Opens a checklist on the iPad (and here): each change ticks itself off when iRacing shows it.</p><div id="suGuideList"></div></div>`;
+  const el = suShow(h);
+  el.querySelector(".su-back").addEventListener("click", () => { clearTimeout(SU.gt); suArea(); });
+  const gb = el.querySelector("#suGuide");
+  if (gb) gb.addEventListener("click", async () => { let g = null; try { g = await api.setup_guide_start(); } catch (e) {} suGuidePaint(g); });
+}
+
+/* #514: the same checklist in the app, refreshed once a second while it's open */
+function suGuidePaint(g) {
+  const box = suEl("suGuideList"), msg = suEl("suGuideMsg");
+  if (!box) return;
+  clearTimeout(SU.gt);
+  if (!g || !g.active) { if (msg && g && g.why) msg.textContent = g.why; box.innerHTML = ""; return; }
+  if (msg) msg.textContent = `${g.done}/${g.total} done${g.live ? "" : " · waiting for iRacing"} · also on the iPad (Car → Garage guide)`;
+  const lab = { todo: "to do", done: "done ✓", check: "check - went the other way?", manual: "tick on the iPad when done" };
+  box.innerHTML = g.steps.map((s, i) => `<div class="su-chg"><span class="n">${s.state === "done" ? "✓" : i + 1}</span><span class="t">${suEsc(s.t)}</span>
+      ${s.key ? `<span class="now">${suEsc(s.before ?? "–")}${s.now != null && s.now !== s.before ? " → " + suEsc(s.now) : ""}</span>` : ""}<span class="why">${lab[s.state] || ""}</span></div>`).join("");
+  SU.gt = setTimeout(async () => { let n = null; try { n = await api.setup_guide_status(); } catch (e) {} suGuidePaint(n); }, 1000);
 }
