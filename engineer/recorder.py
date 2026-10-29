@@ -55,6 +55,7 @@ class Recorder:
         except Exception as e:
             self.log(f"[recorder] no iRacing SDK: {e!r}")
             return
+        self._recover()
         ir = irsdk.IRSDK()
         cur = None                       # the stint being recorded
         idle_since = None
@@ -82,8 +83,7 @@ class Recorder:
                     cur["last_tick"], cur["last_t"] = tick, st
                     if cur["n"] - cur.get("saved_n", 0) >= 120 * 60:     # every 2 min: saved so far (a restart loses little)
                         cur["saved_n"] = cur["n"]
-                        snap = dict(cur); snap["cols"] = {c: array(v.typecode, v) for c, v in cur["cols"].items()}
-                        threading.Thread(target=self._save, args=(snap,), kwargs={"final": False}, daemon=True).start()
+                        self._checkpoint(cur)
                     idle_since = None
                 else:
                     if cur is not None:
@@ -160,13 +160,86 @@ class Recorder:
             cols[c].append(float("nan") if v is None or isinstance(v, (list, tuple, dict, str)) else float(v))
         cur["n"] += 1
 
+    # ------------------------------------------------------------ checkpoints (#537)
+    # 2026-10-29 (#537, Angelo 10-27: "we have long races ... need it optimized for not causing performance issues"):
+    # every 2 minutes only the NEW part is written (a small uncompressed piece, <recording>.ck000, .ck001 ...) instead of
+    # compressing the whole growing recording again. The finished recording is written once at the end and the pieces
+    # are removed; after a crash the pieces are joined into a recording the next time the engineer starts.
+    def _checkpoint(self, cur):
+        i0, n = cur.get("ck_n", 0), cur["n"]
+        if n - i0 < 60 or not cur.get("path"):
+            return
+        k = cur.get("ck_k", 0)
+        cur["ck_k"], cur["ck_n"] = k + 1, n
+        part = {}
+        for c, v in cur["cols"].items():
+            a = np.frombuffer(v, dtype=np.float64 if v.typecode == "d" else np.float32)[i0:n].copy()
+            part[c] = a
+        meta = {"_src": np.array(cur["src"]), "_track": np.array(cur["track"]), "_car": np.array(cur["car"]),
+                "_t0": np.array(cur["t0"]), "_wall0": np.array(time.mktime(cur["wall0"]))}
+        if k == 0:
+            meta["_si"] = np.array(cur["si"])
+        path = cur["path"] + f".ck{k:03d}"
+
+        def write():
+            try:
+                if cur.get("done", [False])[0]:
+                    return                                          # the finished recording is already written
+                with open(path + ".tmp", "wb") as f:
+                    np.savez(f, **part, **meta)
+                os.replace(path + ".tmp", path)
+            except Exception as e:
+                self.log(f"[recorder] checkpoint: {e!r}")
+        threading.Thread(target=write, daemon=True, name="recorder-ck").start()
+
+    @staticmethod
+    def _drop_pieces(path):
+        import glob
+        for f in glob.glob(glob.escape(path) + ".ck*"):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    def _recover(self):
+        """Pieces left by a crash -> one recording (only when no finished recording exists for them)."""
+        import glob
+        for d in {recordings_dir(), fallback_dir()}:
+            try:
+                firsts = glob.glob(os.path.join(glob.escape(d), "*" + EXT + ".ck000"))
+            except Exception:
+                continue
+            for f0 in firsts:
+                base = f0[:-len(".ck000")]
+                try:
+                    if os.path.exists(base):
+                        self._drop_pieces(base); continue
+                    pieces = sorted(glob.glob(glob.escape(base) + ".ck[0-9][0-9][0-9]"))
+                    zs = [np.load(p, allow_pickle=False) for p in pieces]
+                    z0 = zs[0]
+                    cols = {}
+                    for c in [k for k in z0.files if not k.startswith("_")]:
+                        a = np.concatenate([z[c] for z in zs if c in z.files])
+                        cols[c] = array("d" if a.dtype == np.float64 else "f", a.tobytes())
+                    n = len(next(iter(cols.values()))) if cols else 0
+                    cur = {"src": str(z0["_src"]), "track": str(z0["_track"]), "car": str(z0["_car"]), "si": str(z0["_si"]) if "_si" in z0.files else "",
+                           "t0": float(z0["_t0"]), "wall0": time.localtime(float(z0["_wall0"])), "path": base, "cols": cols, "n": n, "done": [False]}
+                    self.log(f"[recorder] joining {len(pieces)} pieces left by a crash: {os.path.basename(base)}")
+                    self._save(cur)
+                    self._drop_pieces(base)
+                except Exception as e:
+                    self.log(f"[recorder] recover {os.path.basename(base)}: {e!r}")
+
     # ------------------------------------------------------------ saving
     def _save(self, cur, final=True):
         if final:
             self.status = "idle"
             cur.setdefault("done", [False])[0] = True              # a checkpoint still writing must not overwrite this
+        orig = cur.get("path")
         n = cur["n"]
         if n < MIN_SECONDS * 60:
+            if final and cur.get("path"):
+                self._drop_pieces(cur["path"])
             return
         try:
             out = {}
@@ -194,6 +267,8 @@ class Recorder:
                         self.log("[recorder] iRacing recorded this drive itself - using its file")
                         if cur.get("path") and os.path.exists(cur["path"]):
                             os.remove(cur["path"])                   # our checkpoint of the same drive
+                        if cur.get("path"):
+                            self._drop_pieces(cur["path"])
                         return
             ints = {"SessionNum", "Lap", "Gear", "PlayerTrackSurface", "PlayerCarMyIncidentCount", "PitSvFlags"}
             bools = {"BrakeABSactive", "OnPitRoad", "IsOnTrack"}
@@ -230,6 +305,8 @@ class Recorder:
                 os.remove(part); return
             os.replace(part, path)
             if final:
+                for q in {orig, path} - {None}:
+                    self._drop_pieces(q)
                 self.log(f"[recorder] saved {n / 60 / 60:.1f} min of your {'replay' if cur['src'] == 'replay' else 'drive'}: {os.path.basename(path)}")
         except Exception as e:
             self.log(f"[recorder] save: {e!r}")
