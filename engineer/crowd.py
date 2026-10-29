@@ -568,7 +568,7 @@ class Mixer:
             # 2026-10-27 (#451, request: radio + crowd "chopping" in the race): a bigger cushion - 120 ms of sound queued
             # ahead - so a moment of the app being busy (or the PC loaded by VR) never reaches the ears as a gap
             self.stream = sd.OutputStream(samplerate=self.rate, channels=2, dtype="float32", device=device,
-                                          callback=cb, blocksize=max(self.block, 1024), latency=0.12)
+                                          callback=cb, blocksize=max(self.block, 2048), latency=0.4)   # 2026-10-29: 0.4 s cushion
             self.stream.start()
             self.device_error = ""
             return True

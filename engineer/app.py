@@ -325,6 +325,16 @@ class Api:
             self._q.put({"t": "ptt", "on": False, "ch": ch})
             threading.Thread(target=lambda: self._heard(ptt.stop(), ch), daemon=True).start()
 
+    def _sim_running(self):
+        """True while iRacing's sim is open (garage, menus, replays included). Cheap: checked every couple of minutes."""
+        try:
+            import subprocess
+            r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq iRacingSim64DX11.exe", "/NH"], capture_output=True,
+                               text=True, timeout=10, creationflags=0x08000000)
+            return "iRacingSim64DX11.exe" in r.stdout
+        except Exception:
+            return False
+
     def _in_car(self):
         b = self._engine.brain if self._engine else None
         return bool(b and (b.g("IsOnTrack", False) or b.g("IsOnTrackCar", False)))
@@ -2139,7 +2149,9 @@ class Api:
         done = None
         while True:
             try:
-                if getattr(self._s, "fx_auto", True) and not self._in_car():
+                # 2026-10-29: only once iRacing is closed - the analysis reads whole recordings (yaml + zip) and its
+                # busy Python work chopped the engineer's own sound while sitting in the pits / garage menus
+                if getattr(self._s, "fx_auto", True) and not self._in_car() and not self._sim_running():
                     paths = self._fx_paths()
                     key = F.cache_path(paths) if paths else None
                     if key and key != done:

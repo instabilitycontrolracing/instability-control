@@ -657,7 +657,7 @@ class _Player:
         self._lock = threading.Lock()
         # 2026-10-27 (#451): 120 ms cushion (was ~10 ms) - the radio chopped whenever the app was busy for a moment
         self.stream = sd.OutputStream(samplerate=sr, channels=1, dtype="float32", device=device,
-                                      callback=self._cb, blocksize=1024, latency=0.12)
+                                      callback=self._cb, blocksize=2048, latency=0.4)   # 2026-10-29: 0.4 s cushion - busy moments never chop
         self.stream.start()
 
     def _cb(self, out, frames, t, status):
