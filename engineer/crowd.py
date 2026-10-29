@@ -269,6 +269,33 @@ def load_sounds(folder, cache_path=None, rate=RATE, log=print):
 
 
 # =================================================================== mixer
+def build_bed(clips, rate=RATE, seconds=30.0):
+    """The pit-lane bed (2026-10-29): a calm, distant crowd made from the crowd beds, a seamless loop."""
+    def pick(*prefixes):
+        for pf in prefixes:
+            for n in sorted(clips):
+                if n.lower().startswith(pf) and clips[n].frames > rate:
+                    return clips[n]
+        return None
+    a = pick("bed_stadium_crowd_far", "bed_stadium_crowd", "bed_")
+    b = pick("bed_crowd_buzz_mid", "bed_crowd_buzz")
+    if a is None and b is None:
+        return None
+    n, xf = int(rate * seconds), int(rate * 2.0)
+    out = np.zeros((n + xf, 2), np.float32)
+    for c, g in ((a, 0.7), (b, 0.35)):
+        if c is None:
+            continue
+        x = c.data.astype(np.float32) / 32768.0
+        reps = int(np.ceil((n + xf) / len(x)))
+        out += np.tile(x, (reps, 1))[: n + xf] * g
+    loop = out[:n].copy()
+    t = np.linspace(0.0, 1.0, xf, dtype=np.float32)[:, None]
+    loop[:xf] = out[n:n + xf] * np.sqrt(1.0 - t) + out[:xf] * np.sqrt(t)       # the end flows into the start
+    pk = float(np.max(np.abs(loop))) or 1.0
+    return (loop / pk * 0.9).astype(np.float32)
+
+
 class Voice:
     """One playing sound. The director writes target/pan/level; the audio thread glides toward them."""
     __slots__ = ("clip", "pos", "loop", "level", "gain", "target", "pan", "gl", "gr", "fade", "fade_target",
@@ -342,6 +369,14 @@ class Mixer:
         # lightest possible work while the PC is at its busiest - and the live crowd takes over again afterwards.
         self._hr = np.zeros((int(rate * self.HOLD_S), 2), np.float32); self._hw = 0; self._hfill = 0
         self._hloop, self._hpos, self._hgain, self._hbuilding = None, 0, 0.0, False
+        # 2026-10-29 ("If it is ever going to chop I don't want it"): played by the separate sound program
+        # (audio_proc.py). This side renders ahead in a plain thread; the bed covers pits / menus / loading screens.
+        self.use_proc = True
+        self.proc = None
+        self.static = True                      # True = the recorded bed plays (pits, garage, menus, loading)
+        self.bed, self.bed_gain = None, 0.0
+        self._bpos = 0
+        self._device = None
 
     # ---------- control (any thread) ----------
     def heartbeat(self):
@@ -412,6 +447,8 @@ class Mixer:
                 self.render(out[i:i + self.block])
             return
         self._render_live(out)
+        if self.proc is not None:              # the bed in the sound program covers loading screens now
+            return
         try:
             self._hold(out)
         except Exception:
@@ -629,6 +666,81 @@ class Mixer:
     # ---------- device ----------
     def start(self, device=None):
         self.close()
+        self._device = device
+        if self.use_proc:
+            try:
+                from .audio_proc import ProcOut
+                pr = ProcOut(self.rate, 2, device, seconds=4.0, name="crowd", loop=self.bed, log=self.log)
+                pr.set_static(self.static); pr.set_loop_gain(self.bed_gain)
+                self.proc = pr
+                threading.Thread(target=self._feed, args=(pr,), daemon=True, name="crowd-feed").start()
+                self.device_error = ""
+                self.log("[crowd] playing through the separate sound program (no chop)")
+                return True
+            except Exception as e:
+                self.proc = None
+                self.log(f"[crowd] sound program didn't start ({e!r}) - playing in the engineer")
+        return self._start_inproc(device)
+
+    AHEAD_S = 0.35                              # the engineer stays this far ahead of the ears
+
+    def set_bed(self, bed):
+        self.bed = None if bed is None else np.ascontiguousarray(bed, np.float32)
+        pr = self.proc
+        if pr is not None and self.bed is not None:
+            pr.set_loop(self.bed)
+
+    def _feed(self, pr):
+        """Keeps the sound program AHEAD_S ahead. Not on a deadline: being busy for a moment costs nothing."""
+        blk = np.zeros((self.block, 2), np.float32)
+        tap_blk = np.zeros((self.block, 2), np.float32)
+        ahead = int(self.rate * self.AHEAD_S)
+        g_u = g_d = 0
+        while self.proc is pr:
+            try:
+                if not pr.alive():
+                    self.log("[crowd] sound program stopped - restarting it")
+                    self.proc = None
+                    pr.close()
+                    self.start(self._device)
+                    return
+                pr.set_static(self.static)
+                pr.set_loop_gain(self.bed_gain)
+                n = 0
+                while pr.ahead() < ahead and n < 64 and self.proc is pr:
+                    self.render(blk)
+                    if not pr.write(blk):
+                        break
+                    n += 1
+                    out = blk
+                    bed = self.bed
+                    if self.static and bed is not None:            # the broadcast hears what the headset hears
+                        L = len(bed); p = self._bpos; k = min(self.block, L - p)
+                        tap_blk[:k] = bed[p:p + k]
+                        if self.block > k:
+                            tap_blk[k:] = bed[:self.block - k]
+                        tap_blk *= self.bed_gain
+                        self._bpos = (p + self.block) % L
+                        out = tap_blk
+                    for tap in list(TAPS):
+                        try:
+                            tap(out)
+                        except Exception:
+                            pass
+                u, d = pr.gaps()
+                if u > g_u or d > g_d:
+                    try:
+                        from .voice import SOUND_GAPS
+                        SOUND_GAPS["crowd"] += (u - g_u) + (d - g_d)
+                    except Exception:
+                        pass
+                    g_u, g_d = u, d
+            except Exception as e:
+                try: self.log(f"[crowd] feed: {e!r}")
+                except Exception: pass
+            time.sleep(0.01)
+
+    def _start_inproc(self, device=None):
         try:
             import sounddevice as sd
 
@@ -659,6 +771,9 @@ class Mixer:
             return False
 
     def close(self):
+        pr, self.proc = self.proc, None
+        if pr is not None:
+            pr.close()
         s, self.stream = self.stream, None
         if s is not None:
             try:
@@ -1512,6 +1627,14 @@ class Crowd:
         clips = load_sounds(self.sounds_dir, os.path.join(self.root, "levels.json"), log=self.log)
         self.director = Director(self.mixer, clips, [BUNDLED_TRACKS, self.tracks_dir], self.s, log=self.log)
         self.director.pack_root = os.path.join(self.root, "track_sounds")          # C5 (#284)
+        try:
+            bed = build_bed(clips)
+            if bed is not None:
+                self._bed_peak = float(np.max(np.abs(bed))) or 1.0
+                self.mixer.set_bed(bed)
+                self.log(f"[crowd] pit-lane bed ready ({len(bed) / RATE:.0f} s loop)")
+        except Exception as e:
+            self.log(f"[crowd] pit-lane bed: {e!r}")
         os.makedirs(self.director.pack_root, exist_ok=True)
         self.state = "ready" if clips else "no_sounds"
         if clips:
@@ -1534,14 +1657,14 @@ class Crowd:
             if not getattr(s, "crowd_on", True) or getattr(s, "crowd_mute", False):
                 self.mixer.muted = True
         on = getattr(s, "crowd_on", True)
-        if not on and self.mixer.stream is not None:
+        if not on and (self.mixer.stream is not None or self.mixer.proc is not None):
             self.mixer.stop_all(); self.mixer.close()
-        elif on and self.mixer.stream is None and self.state == "ready":
+        elif on and self.mixer.stream is None and self.mixer.proc is None and self.state == "ready":
             self.mixer.start(self.device)
 
     def set_device(self, dev):
         self.device = dev or None
-        if self.mixer.stream is not None:
+        if self.mixer.stream is not None or self.mixer.proc is not None:
             self.mixer.start(self.device)
 
     def tick(self, brain):
@@ -1559,11 +1682,41 @@ class Crowd:
             if not getattr(self, "_ferr", False):
                 self._ferr = True; self.log(f"[crowd] {e!r}")
         try:
+            self._static(brain, f, now)
+        except Exception as e:
+            if not getattr(self, "_serr", False):
+                self._serr = True; self.log(f"[crowd] bed: {e!r}")
+        try:
             d.update(f, dt)
         except Exception as e:
             self.mixer.stop_all()
             if not getattr(self, "_uerr", False):
                 self._uerr = True; self.log(f"[crowd] director problem, crowd silent: {e!r}")
+
+    _sim_t, _sim_open = -99.0, False
+
+    def _static(self, brain, f, now):
+        """2026-10-29 (Angelo: "Can it just play a static loop for the pit lane all the way until we are in the car"):
+        the recorded bed plays in menus, loading screens, the garage and the pit lane; the live crowd only out on
+        track (or watching on a TV camera). Silent when iRacing isn't open or the crowd is switched off / muted."""
+        if now - self._sim_t > 3.0:
+            self._sim_t = now
+            try:
+                from . import procs
+                ex = procs.running_exes()
+                self._sim_open = any(e.startswith("iracingsim") or e == "iracingui.exe" for e in ex)
+            except Exception:
+                self._sim_open = brain is not None
+        live = bool(brain is not None and f.running and not simload.BUSY
+                    and (getattr(f, "tv", False) or (f.on_track and not f.in_pits)))
+        m = self.mixer
+        m.static = not live
+        off = not getattr(self.s, "crowd_on", True) or getattr(self.s, "crowd_mute", False)
+        if off or not (self._sim_open or brain is not None):
+            m.bed_gain = 0.0
+        else:
+            vol = max(0.0, min(1.0, float(getattr(self.s, "crowd_volume", 0.3) or 0.0)))
+            m.bed_gain = min(1.0, vol / 0.3) * m.ceiling * 0.7 / getattr(self, "_bed_peak", 1.0)
 
     ONBOARD = ("cockpit", "roll bar", "rollbar", "gyro", "chase", "nose", "gearbox", "susp", "wing", "in car", "incar", "onboard", "driver", "mirror")
     _cam_prev = None
@@ -1695,7 +1848,7 @@ class Crowd:
     def test(self):
         if self.director is None or self.state != "ready":
             return {"ok": False, "msg": "No crowd sounds yet - copy them from SimHub first"}
-        if self.mixer.stream is None and not self.mixer.start(self.device):
+        if self.mixer.stream is None and self.mixer.proc is None and not self.mixer.start(self.device):
             return {"ok": False, "msg": "Sound device problem: " + self.mixer.device_error}
         ok = self.director.test_cheer()
         return {"ok": ok, "msg": "Playing a quiet cheer" if ok else "No cheer sound found"}

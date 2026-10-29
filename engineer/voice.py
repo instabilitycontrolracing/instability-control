@@ -679,6 +679,11 @@ def sound_gaps_logger(log):
     def run():
         while True:
             time.sleep(60)
+            for pl in list(_PROC_PLAYERS):                # the separate sound program's own count
+                try:
+                    SOUND_GAPS["radio"] += pl.gaps()
+                except Exception:
+                    pass
             r, c = SOUND_GAPS["radio"], SOUND_GAPS["crowd"]
             SOUND_GAPS["radio"] = SOUND_GAPS["crowd"] = 0
             if r or c:
@@ -689,20 +694,45 @@ def sound_gaps_logger(log):
 # 2026-10-25 (request: "can I hear the engineer team radio on the iPad?"): every voice that goes on air passes through
 # _Player.play; listeners here (the iPad link) get a copy of the clip as it starts. Never blocks or breaks playback.
 TAPS = []
+PROC_SOUND = True   # 2026-10-29: sound plays in its own program (audio_proc.py) - no more chop
 
 
 class _Player:
+    """Radio out. 2026-10-29 ("If it is ever going to chop I don't want it"): played by the separate sound program
+    (audio_proc.py) - each line is handed over whole before it starts, so once it starts nothing in the engineer can
+    break it up. Falls back to playing in-process (the old way) only if that program can't start."""
+
     def __init__(self, sr, device):
-        import sounddevice as sd
-        self.sd, self.sr, self.device = sd, sr, device
+        self.sr, self.device = sr, device
         self.playing_prio = None
+        self.cut = False
         self._buf, self._pos = None, 0
         self._done = threading.Event()
         self._lock = threading.Lock()
-        # 2026-10-27 (#451): 120 ms cushion (was ~10 ms) - the radio chopped whenever the app was busy for a moment
-        self.stream = sd.OutputStream(samplerate=sr, channels=1, dtype="float32", device=device,
-                                      callback=self._cb, blocksize=2048, latency=0.4)   # 2026-10-29: 0.4 s cushion - busy moments never chop
-        self.stream.start()
+        self.proc, self.stream = None, None
+        self._gaps = 0
+        if PROC_SOUND:
+            try:
+                from .audio_proc import ProcOut
+                self.proc = ProcOut(sr, 1, device, seconds=90.0, name="radio", log=print)
+                _PROC_PLAYERS.append(self)
+            except Exception as e:
+                print(f"[sound] radio player program: {e!r} - playing in the engineer instead")
+                self.proc = None
+        if self.proc is None:
+            import sounddevice as sd
+            self.sd = sd
+            self.stream = sd.OutputStream(samplerate=sr, channels=1, dtype="float32", device=device,
+                                          callback=self._cb, blocksize=2048, latency=0.4)
+            self.stream.start()
+
+    def gaps(self):
+        """New device gaps since the last call (the separate player's count)."""
+        if self.proc is None:
+            return 0
+        u, _ = self.proc.gaps()
+        d, self._gaps = u - self._gaps, u
+        return max(0, d)
 
     def _cb(self, out, frames, t, status):
         if status and status.output_underflow:
@@ -725,6 +755,9 @@ class _Player:
                 tap(audio, self.sr)
             except Exception:
                 pass
+        if self.proc is not None:
+            self._play_proc(audio, prio)
+            return
         with self._lock:
             self._buf, self._pos = audio, 0
             self.playing_prio = prio
@@ -733,14 +766,45 @@ class _Player:
         self._done.wait()
         self.playing_prio = None
 
-    def close(self):
+    def _play_proc(self, audio, prio):
+        pr = self.proc
+        a = np.ascontiguousarray(np.asarray(audio, np.float32).reshape(-1, 1))
+        self.playing_prio, self.cut = prio, False
         try:
-            self.stream.stop(); self.stream.close()
-        except Exception:
-            pass
+            i = 0
+            while i < len(a) and not self.cut:               # normally all of it at once (the ring holds 90 s)
+                k = min(len(a) - i, pr.room())
+                if k > 0 and pr.write(a[i:i + k]):
+                    i += k
+                else:
+                    time.sleep(0.01)
+            end = pr.written()
+            while not self.cut and pr.played() < end:
+                if not pr.alive():
+                    break
+                time.sleep(0.01)
+        finally:
+            self.playing_prio = None
+
+    def close(self):
+        if self in _PROC_PLAYERS:
+            _PROC_PLAYERS.remove(self)
+        if self.proc is not None:
+            self.cut = True
+            self.proc.close()
+        if self.stream is not None:
+            try:
+                self.stream.stop(); self.stream.close()
+            except Exception:
+                pass
         self._done.set()
 
     def stop(self):
+        if self.proc is not None:
+            if self.playing_prio is not None:
+                self.cut = True
+                self.proc.cut()                          # the player fades it out (no click) and drops the rest
+            return
         with self._lock:
             if self._buf is not None:
                 self.cut = True
@@ -748,3 +812,6 @@ class _Player:
                 end = min(len(self._buf), self._pos + int(0.03 * self.sr))
                 fade = self._buf[self._pos:end] * np.linspace(1, 0, end - self._pos, dtype=np.float32)
                 self._buf = np.concatenate([self._buf[:self._pos], fade])
+
+
+_PROC_PLAYERS = []
