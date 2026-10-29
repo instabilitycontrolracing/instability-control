@@ -60,6 +60,12 @@ class Settings:
     snd_tv_db: float = 0.0           # TV stream level (Voicemeeter B1), -60..+6 dB
     snd_tv_game: bool = True         # game sound to the TV stream
     snd_tv_mute: bool = False
+    bcast_on: bool = True            # 2026-10-29 (#515): TV + stream get their own, rougher, louder radio with key-ups
+    bcast_grit: float = 1.0          # broadcast radio distortion 0..2
+    bcast_db: float = 6.0            # broadcast radio loudness, 0..+12 dB (peak-limited)
+    bcast_keyup: bool = True         # key-up click + squelch tail on the broadcast
+    bcast_crowd: bool = True         # the crowd on the broadcast
+    bcast_crowd_db: float = 0.0
     snd_tv_delay_ms: int = 0         # 2026-10-26 (#303): lip-sync - hold the TV sound back so it lines up with the picture
     snd_engine: int = 0              # car sound: engine body boost 0..100
     snd_detail: int = 0              # car sound: tyre / detail boost 0..100

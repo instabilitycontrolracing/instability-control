@@ -1225,6 +1225,16 @@ body.idle *, body.idle *::before, body.idle *::after { animation-play-state: pau
           <div class="meter"><div id="sndTvM"></div></div>
         </div>
         <div class="card">
+          <h3>Broadcast radio (TV + stream)</h3>
+          <p class="note" style="margin:0 0 10px">Your headset keeps the radio exactly as it is. The TV and the stream get their own version: rougher, louder, with the radio key-up click before each call and the squelch after. Played by a small helper (IC Broadcast Audio) into an output you never hear.</p>
+          <div class="sw" data-k="bcast_on"><span class="k"></span><span class="name">Broadcast radio on the TV and stream</span><span class="sub">off: the TV hears the same radio as your headset</span></div>
+          <div class="sw" data-k="bcast_keyup"><span class="k"></span><span class="name">Key-up click and squelch</span></div>
+          <div class="sw" data-k="bcast_crowd"><span class="k"></span><span class="name">Crowd on the broadcast</span></div>
+          <div class="row"><span class="name" style="width:110px">Distortion</span><input type="range" id="bcGrit" min="0" max="200" step="10"><div class="readout" id="bcGritR"></div></div>
+          <div class="row"><span class="name" style="width:110px">Radio loudness</span><input type="range" id="bcDb" min="0" max="12" step="1"><div class="readout" id="bcDbR"></div></div>
+          <div class="row"><span class="name" style="width:110px">Crowd level</span><input type="range" id="bcCrowd" min="-24" max="6" step="1"><div class="readout" id="bcCrowdR"></div></div>
+        </div>
+        <div class="card">
           <h3>Car sound</h3>
           <p class="note" style="margin:0 0 10px">Brings the car forward in the mix, for the headphones and the TV. Made with Equalizer APO, so it changes instantly and can never clip.</p>
           <div class="sw" data-k="snd_trackside_space"><span class="k"></span><span class="name">Trackside cameras: the circuit around the cars</span><span class="sub">the game's cars echo off the grandstands and pit wall on TV cameras; onboard and driving stay dry</span></div>

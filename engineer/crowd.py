@@ -39,6 +39,7 @@ except Exception:                                   # no scipy: no helmet filter
     _lfilter = None
 
 RATE = 48000
+TAPS = []   # 2026-10-29 (#515): listeners that get each rendered crowd block (stereo, RATE)
 BLOCK = 1024
 TARGET_RMS_DB = -20.0          # every file is brought to this loudness...
 FILE_PEAK_DB = -1.0            # ...without its peaks going over this
@@ -559,6 +560,11 @@ class Mixer:
 
             def cb(outdata, frames, t, status):
                 self.render(outdata)
+                for tap in list(TAPS):                     # #515: the broadcast player gets a copy (never blocks)
+                    try:
+                        tap(outdata)
+                    except Exception:
+                        pass
             # 2026-10-27 (#451, request: radio + crowd "chopping" in the race): a bigger cushion - 120 ms of sound queued
             # ahead - so a moment of the app being busy (or the PC loaded by VR) never reaches the ears as a gap
             self.stream = sd.OutputStream(samplerate=self.rate, channels=2, dtype="float32", device=device,

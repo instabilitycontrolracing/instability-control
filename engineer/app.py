@@ -209,6 +209,17 @@ class Api:
             except Exception as e:
                 self._crowd = None
                 self._log(f"[crowd] {e!r}")
+            try:                                               # broadcast radio (2026-10-29, #515): TV + stream only
+                from .broadcast import Link
+                from . import voice as _V, crowd as _C
+                self._bcast = Link(self._s, log=self._log, on_change=lambda: self._audio_mix().write_stream())
+                _V.TAPS.append(self._bcast.clip)
+                _C.TAPS.append(self._bcast.crowd)
+                import atexit
+                atexit.register(self._bcast.stop)
+            except Exception as e:
+                self._bcast = None
+                self._log(f"[broadcast] {e!r}")
             try:                                               # bass shaker (2026-10-26, #211): off until a device is picked
                 from .shaker import Shaker
                 self._shaker = Shaker(self._s, log=self._log)
@@ -550,6 +561,12 @@ class Api:
                 prof = dict((self._s.snd_car_profiles or {}).get(car) or {"engine": self._s.snd_engine, "detail": self._s.snd_detail})
                 prof["engine" if key == "snd_engine" else "detail"] = value
                 self._s.snd_car_profiles = dict(self._s.snd_car_profiles or {}, **{car: prof})
+        elif key in ("bcast_grit",):
+            value = max(0.0, min(2.0, round(float(value), 2)))
+        elif key in ("bcast_db",):
+            value = max(0.0, min(12.0, round(float(value), 1)))
+        elif key in ("bcast_crowd_db",):
+            value = max(-24.0, min(6.0, round(float(value), 1)))
         elif key == "snd_tv_delay_ms":                         # lip-sync (#303)
             value = max(0, min(300, int(value)))
         elif key in ("snd_hp_db", "snd_tv_db"):
@@ -562,6 +579,8 @@ class Api:
                 return False                                   # H: is the business Google Drive: never
         setattr(self._s, key, value)
         self._s.save()
+        if key.startswith("bcast_") and getattr(self, "_bcast", None):
+            self._bcast.push_settings()
         if key.startswith("vault_"):
             if key == "vault_dir":
                 from . import telemetry as _T

@@ -22,6 +22,7 @@ AUDIO_DIR = r"C:\SimRacing\Audio"
 CAR_FILE = os.path.join(AUDIO_DIR, "grandstand_car.txt")
 HP_FILE = os.path.join(AUDIO_DIR, "grandstand_headphones.txt")
 TV_FILE = os.path.join(AUDIO_DIR, "grandstand_tv.txt")      # 2026-10-26: home-theatre 2.1 on the TV path only
+EXCLUDE_PID = None   # 2026-10-29 (#515): set by broadcast.Link while the broadcast player is connected
 STREAM_FILE = os.path.join(AUDIO_DIR, "apollo_tv.txt")      # 2026-10-26 (#303): the same, read by the developer's Apollo build
 TRACKSIDE_IR = os.path.join(AUDIO_DIR, "trackside_space.wav")  # 2026-10-26 (#229): the circuit's reflections
 # 2026-10-26 (D4 #242 / D5 #243): your own car while driving - the pit wall and garages on pit road, and under a bridge
@@ -312,6 +313,8 @@ class AudioMix:
                  f"Volume: {vol:.1f} dB", f"Mute: {1 if mute else 0}", f"Delay: {delay} ms", f"Night: {1 if night else 0}"]
         if on:
             lines += [x for x in HOME_THEATRE.splitlines() if x.startswith(("Preamp", "Filter"))]
+        if EXCLUDE_PID:                                  # #515: the TV hears the broadcast radio, not the headset one
+            lines.append(f"Exclude PID: {int(EXCLUDE_PID)}")
         text = "\n".join(lines) + "\n"
         if getattr(self, "_stream_last", None) != text:
             self._stream_last = text
