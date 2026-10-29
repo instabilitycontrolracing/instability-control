@@ -11,11 +11,14 @@ messages - no key presses, no extra software):
   LB / RB  previous / next incident     LT (hold)  slow motion
   Y        jump to live (the end)       View/Back  jump to the start of the session
   X        flag this moment for the highlight reel (Grandstand's highlight markers / OBS clip)
+  Start/Menu (the three lines)  MusicBee play / pause - ALWAYS, also while driving and without iRacing
+                                (2026-10-29, Angelo: "one of the unused buttons to be the play/pause button for musicbee
+                                at all times"); only MusicBee is told, never the other players
 
 Only while a replay is playing or you're out of the car - never while you're driving (a stray press can't touch your
 race). Off with ENGINEER_REPLAY_REMOTE=0.
 """
-import ctypes, json, os, threading, time, urllib.request
+import ctypes, glob, json, os, subprocess, threading, time, urllib.request
 
 A, B, X, Y = 0x1000, 0x2000, 0x4000, 0x8000
 UP, DOWN, LEFT, RIGHT = 0x0001, 0x0002, 0x0004, 0x0008
@@ -106,6 +109,27 @@ class ReplayRemote:
         elif btn == X:
             self.flag()
 
+    def music(self):
+        """MusicBee play / pause through MusicBee's own command line (/PlayPause): only MusicBee reacts (a media key
+        would also pause a browser video). Nothing happens if MusicBee isn't installed / running."""
+        exe = getattr(self, "_mb", None)
+        if exe is None:
+            cands = [os.path.join(os.environ.get(v, ""), "MusicBee", "MusicBee.exe") for v in ("ProgramFiles(x86)", "ProgramFiles")]
+            cands += glob.glob(os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "MusicBee", "MusicBee.exe"))
+            exe = self._mb = next((c for c in cands if c and os.path.exists(c)), "")
+        if not exe:
+            self.log("[replay remote] MusicBee not found")
+            return
+        try:
+            out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq MusicBee.exe", "/NH"], capture_output=True, text=True,
+                                 timeout=3, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+            if "MusicBee.exe" not in out:
+                return                       # not open: don't start it from a button press mid-race
+            subprocess.Popen([exe, "/PlayPause"], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            self.log("[replay remote] music play / pause")
+        except Exception as e:
+            self.log(f"[replay remote] music: {e!r}"[:160])
+
     def flag(self):
         """Ask Grandstand to write a highlight marker now (its control app API on this PC)."""
         def go():
@@ -153,6 +177,8 @@ class ReplayRemote:
                     # only a new press or a trigger change can do anything: ask iRacing only then (same result)
                     if not ((b & ~p) or lt != self._slow):
                         continue
+                    if (b & START) and not (p & START):     # music: always (driving or not, iRacing or not)
+                        threading.Thread(target=self.music, daemon=True).start()
                     if not self.allowed():
                         continue
                     for m in (A, B, X, Y, UP, DOWN, LEFT, RIGHT, BACK, LB, RB):
