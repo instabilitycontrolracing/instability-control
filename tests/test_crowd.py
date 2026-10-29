@@ -499,3 +499,37 @@ class HeliAhead(unittest.TestCase):
         self.assertIs(got, d2._heli_pre[1])
         self.assertTrue(np.array_equal(np.asarray(got.data), np.asarray(inline.data)))
         self.assertIs(d2.heli_big(), got)                  # kept
+
+
+class LoadingScreenLoop(unittest.TestCase):
+    """2026-10-29: on a loading screen the crowd keeps playing as a loop of the last seconds (no gap, almost no work)."""
+
+    def test_loop_plays_while_loading_then_live_returns(self):
+        import time as _t
+        m = mixer()
+        m.volume = 0.3
+        clip = next(iter(CLIPS.values()))
+        m.play(clip, level=1.0, loop=True)
+        live = run(m, 10)
+        self.assertGreater(np.abs(live[-m.rate:]).max(), 1e-3)
+        C.simload.BUSY = True
+        try:
+            run(m, 0.2)                        # starts the loop build (background thread)
+            for _ in range(50):
+                if m._hloop is not None:
+                    break
+                _t.sleep(0.05)
+            self.assertIsNotNone(m._hloop)
+            busy = run(m, 8)
+            tail = busy[m.rate * 2:]           # after the crossfade: only the loop is playing
+            self.assertGreater(np.abs(tail).max(), 1e-3)
+            tail = tail[:len(tail) // m.block * m.block]
+            blocks = tail.reshape(-1, m.block, 2)
+            self.assertEqual(int((np.abs(blocks).max(axis=(1, 2)) < 1e-6).sum()), 0)   # no silent block
+        finally:
+            C.simload.BUSY = False
+        m.play(clip, level=1.0, loop=True)      # the director starts the beds again after loading
+        after = run(m, 4)
+        self.assertGreater(np.abs(after[-m.rate:]).max(), 1e-3)
+        self.assertEqual(m._hgain, 0.0)
+        self.assertIsNone(m._hloop)             # next loading screen records fresh crowd

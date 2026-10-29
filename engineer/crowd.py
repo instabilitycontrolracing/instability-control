@@ -298,6 +298,9 @@ def _pan_gains(pan):
 class Mixer:
     """Mixes in the audio callback with buffers allocated once. render() is also used offline (tests)."""
     WATCHDOG_S = 1.0          # no update from the director for this long -> fade to silence
+    HOLD_S = 20.0             # crowd kept for the loading-screen loop
+    HOLD_MIN_S = 6.0          # need at least this much crowd to loop
+    HOLD_LEVEL = 0.85         # the loop sits a touch under the live crowd
     DUCK = db2lin(-9)         # crowd level while the radio is talking
 
     def __init__(self, max_voices=6, rate=RATE, block=BLOCK, log=print):
@@ -333,6 +336,12 @@ class Mixer:
         # 2026-10-26 (#205): an echo under bridges / in tunnels (two taps + feedback), gliding in and out
         self.echo_target, self.echo = 0.0, 0.0
         self._eb = np.zeros((rate, 2), np.float32); self._ew = 0
+        # 2026-10-29 (Angelo: "I would love the crowd sounds to stay stable in loading screens - maybe it could just play
+        # a static recording while loading screens happen"): the last HOLD_S seconds of crowd are kept; on a loading
+        # screen that recording loops (seamless crossfade, made in a background thread) - one slice copy per block, the
+        # lightest possible work while the PC is at its busiest - and the live crowd takes over again afterwards.
+        self._hr = np.zeros((int(rate * self.HOLD_S), 2), np.float32); self._hw = 0; self._hfill = 0
+        self._hloop, self._hpos, self._hgain, self._hbuilding = None, 0, 0.0, False
 
     # ---------- control (any thread) ----------
     def heartbeat(self):
@@ -397,6 +406,70 @@ class Mixer:
     # ---------- audio thread ----------
     def render(self, out):
         """Fill out (frames x 2 float32). Never raises; on any problem the block is silent."""
+        frames = len(out)
+        if frames > self.block:
+            for i in range(0, frames, self.block):
+                self.render(out[i:i + self.block])
+            return
+        self._render_live(out)
+        try:
+            self._hold(out)
+        except Exception:
+            pass
+
+    def _hold(self, out):
+        """Loading screens: loop the last seconds of crowd (see HOLD_S). Otherwise keep recording them."""
+        frames = len(out)
+        busy = simload.BUSY and self.clock() >= self.test_until
+        if not busy and self._hgain <= 0.0:
+            if self.master > 1e-4:                         # only real crowd goes into the recording
+                L = len(self._hr); w = self._hw; k = min(frames, L - w)
+                self._hr[w:w + k] = out[:k]
+                if frames > k:
+                    self._hr[:frames - k] = out[k:]
+                self._hw = (w + frames) % L; self._hfill = min(L, self._hfill + frames)
+            if self._hloop is not None and not self._hbuilding:
+                self._hloop = None                           # next loading screen gets a fresh recording
+            return
+        if self._hloop is None:
+            if not self._hbuilding and self._hfill >= int(self.HOLD_MIN_S * self.rate):
+                self._hbuilding = True
+                threading.Thread(target=self._build_hold, daemon=True, name="crowd-hold").start()
+            return
+        g0 = self._hgain
+        g1 = min(1.0, g0 + frames / (self.rate * 0.6)) if busy else max(0.0, g0 - frames / (self.rate * 1.0))
+        self._hgain = g1
+        loop, n = self._hloop, len(self._hloop)
+        p, k = self._hpos, min(frames, n - self._hpos)
+        seg = self._tmp[:frames]
+        seg[:k] = loop[p:p + k]
+        if frames > k:
+            seg[k:] = loop[:frames - k]
+        self._hpos = (p + frames) % n
+        ramp = self._rl[:frames]
+        np.multiply(self._base[:frames] * (self.block / frames) if frames != self.block else self._base, (g1 - g0) * self.HOLD_LEVEL, out=ramp)
+        ramp += g0 * self.HOLD_LEVEL
+        seg *= ramp[:, None]
+        out += seg
+        np.clip(out, -self.ceiling, self.ceiling, out=out)
+
+    def _build_hold(self):
+        try:
+            L, n = len(self._hr), self._hfill
+            seg = np.roll(self._hr, -self._hw, axis=0)[L - n:].copy()      # oldest .. newest
+            xf = min(int(self.rate * 1.0), n // 4)
+            loop = seg[xf:].copy()
+            t = np.linspace(0.0, 1.0, xf, dtype=np.float32)[:, None]
+            loop[-xf:] = seg[-xf:] * np.sqrt(1.0 - t) + seg[:xf] * np.sqrt(t)   # end flows into the start: seamless
+            self._hpos = 0
+            self._hloop = loop.astype(np.float32)
+        except Exception as e:
+            try: self.log(f"[crowd] loading-screen loop: {e!r}")
+            except Exception: pass
+        finally:
+            self._hbuilding = False
+
+    def _render_live(self, out):
         try:
             frames = len(out)
             if frames > self.block:                    # never expected; split, no new buffers
