@@ -560,6 +560,12 @@ class Mixer:
             import sounddevice as sd
 
             def cb(outdata, frames, t, status):
+                if status and status.output_underflow:
+                    try:
+                        from .voice import SOUND_GAPS
+                        SOUND_GAPS["crowd"] += 1
+                    except Exception:
+                        pass
                 self.render(outdata)
                 for tap in list(TAPS):                     # #515: the broadcast player gets a copy (never blocks)
                     try:

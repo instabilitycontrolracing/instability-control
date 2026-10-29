@@ -669,6 +669,22 @@ class _Radio:
 
 RADIO = _Radio()
 
+# 2026-10-29 evening (Angelo: "if it works reliably now maybe we can even consider reducing the delay"): every gap the
+# sound cards report (an "underflow": the app didn't hand over sound in time) is counted here and written to the log once
+# a minute ("[sound] gaps in the last minute: radio N, crowd N") - the evidence for lowering the 0.4 s cushion.
+SOUND_GAPS = {"radio": 0, "crowd": 0}
+
+
+def sound_gaps_logger(log):
+    def run():
+        while True:
+            time.sleep(60)
+            r, c = SOUND_GAPS["radio"], SOUND_GAPS["crowd"]
+            SOUND_GAPS["radio"] = SOUND_GAPS["crowd"] = 0
+            if r or c:
+                log(f"[sound] gaps in the last minute: radio {r}, crowd {c}")
+    threading.Thread(target=run, daemon=True, name="sound-gaps").start()
+
 
 # 2026-10-25 (request: "can I hear the engineer team radio on the iPad?"): every voice that goes on air passes through
 # _Player.play; listeners here (the iPad link) get a copy of the clip as it starts. Never blocks or breaks playback.
@@ -689,6 +705,8 @@ class _Player:
         self.stream.start()
 
     def _cb(self, out, frames, t, status):
+        if status and status.output_underflow:
+            SOUND_GAPS["radio"] += 1                     # 2026-10-29: counted, logged once a minute (sound_gaps_logger)
         with self._lock:
             if self._buf is None:
                 out[:] = 0

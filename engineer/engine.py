@@ -98,6 +98,11 @@ class Engine:
         self.voice = Voice(VOCAB, PRESET, device=settings.device or None, volume=settings.volume,
                            log=log, strength=settings.radio_strength)
         self.voice.on_say = on_say
+        try:
+            from .voice import sound_gaps_logger
+            sound_gaps_logger(log)
+        except Exception:
+            pass
         self.voice.spotter = getattr(settings, "spotter_voice", "") or ""
         self.voice.driver_name = getattr(settings, "driver_name", "") or ""   # beta (2026-10-24): no name fallback
         self.voice.driver_name_say = getattr(settings, "driver_name_say", "") or ""   # #542: how to say it

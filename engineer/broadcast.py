@@ -16,7 +16,7 @@ If the player isn't running, nothing changes: the TV hears the engineer as befor
 Wire format (127.0.0.1:PORT, one client): 1 byte type, 4 bytes sample rate, 1 byte channels, 4 bytes frames, float32 data.
   type 1 = radio clip (mono), 2 = crowd block (stereo), 3 = settings (json in place of audio: frames = byte length).
 """
-import json
+import collections, json
 import os
 import queue
 import socket
@@ -249,6 +249,8 @@ class Player:
         self.crowd = np.zeros((RATE * 2, 2), np.float32)   # 2 s ring
         self.cw = self.cr = 0
         self.crowd_on = False
+        self.frac = 0.0
+        self.arrivals, self.last_arrival = collections.deque(maxlen=2000), 0.0
         self.underruns = self.skips = 0
         self.lock = threading.Lock()
 
@@ -272,6 +274,10 @@ class Player:
         L = len(self.crowd)
         with self.lock:
             # 2026-10-29 (efficiency): two slice copies around the ring end instead of an index array per block
+            now = time.monotonic()
+            if self.last_arrival:
+                self.arrivals.append((now, now - self.last_arrival))
+            self.last_arrival = now
             w, end = self.cw, (self.cw + n) % L
             if n > L:                                 # never expected: only the newest 2 s survive, where they always went
                 w, b, n = (w + n - L) % L, b[-L:], L
@@ -281,28 +287,52 @@ class Player:
                 self.crowd[:n - k] = b[k:]
             self.cw = end
 
+    # 2026-10-29 evening: the crowd arrives on the headset card's clock and plays on another card's clock; the two never
+    # tick at exactly the same speed, so the queue slowly emptied (1-3 audible "ran dry" gaps a minute even with the PC
+    # idle) or filled up. Now the player gently speeds up / slows down the crowd (at most 0.5 %, inaudible) to keep the
+    # queue at TARGET - no gaps from drift, and the queue can stay small (less delay).
+    TARGET = 0.12              # seconds of crowd kept queued at least
+    TARGET_MAX = 0.6           # ...and at most
+    MAX_TRIM = 0.005           # largest speed correction (0.5 %)
+    # The crowd also arrives in bursts (the headset stream hands over several blocks at once, then nothing for a while):
+    # the queue must cover the longest pause between deliveries seen in the last 30 s (+25 %), whatever that is.
+
+    def _target(self):
+        now = time.monotonic()
+        while self.arrivals and now - self.arrivals[0][0] > 30.0:
+            self.arrivals.popleft()
+        worst = max((g for _, g in self.arrivals), default=0.0)
+        return int(min(self.TARGET_MAX, max(self.TARGET, worst * 1.25)) * RATE)
+
     def render(self, out):
         frames = out.shape[0]
         out[:] = 0
         with self.lock:
-            # crowd: wait for a 100 ms cushion once, then play continuously (only re-cushion after a real gap)
-            avail = (self.cw - self.cr) % len(self.crowd)
-            if avail > RATE:                              # fell far behind (clock drift): skip ahead
-                self.cr = (self.cw - int(0.2 * RATE)) % len(self.crowd)
-                avail = int(0.2 * RATE)
+            L = len(self.crowd)
+            target = self._target()
+            avail = (self.cw - self.cr) % L
+            if avail > RATE:                              # fell far behind (a stall): skip ahead to the target
+                self.cr = (self.cw - target) % L
+                avail, self.frac = target, 0.0
                 self.skips += 1
-            if not self.crowd_on and avail >= int(0.2 * RATE):     # 200 ms cushion (the two sound cards' clocks drift)
-                self.crowd_on = True
+            if not self.crowd_on and avail >= target:
+                self.crowd_on, self.frac = True, 0.0
             if self.crowd_on:
-                if avail >= frames:
-                    L, r, g = len(self.crowd), self.cr, 10 ** (self.cfg["crowd_db"] / 20.0)
-                    k = min(frames, L - r)
-                    out[:k] += self.crowd[r:r + k] * g
-                    if frames > k:
-                        out[k:frames] += self.crowd[:frames - k] * g
-                    self.cr = (r + frames) % L
+                ratio = 1.0 + max(-self.MAX_TRIM, min(self.MAX_TRIM, (avail - target) / RATE * 0.05))
+                need = self.frac + frames * ratio
+                if avail >= int(need) + 2:
+                    pos = self.frac + np.arange(frames, dtype=np.float64) * ratio
+                    i0 = pos.astype(np.int64)
+                    w = (pos - i0).astype(np.float32)[:, None]
+                    a = self.crowd[(self.cr + i0) % L]
+                    b = self.crowd[(self.cr + i0 + 1) % L]
+                    g = 10 ** (self.cfg["crowd_db"] / 20.0)
+                    out += (a + (b - a) * w) * g
+                    step = int(need)
+                    self.cr = (self.cr + step) % L
+                    self.frac = need - step
                 else:
-                    self.crowd_on = False                 # ran dry: build the cushion again
+                    self.crowd_on = False                 # truly ran dry (the engineer stalled): cushion again
                     self.underruns += 1
             # radio: one call at a time, centred
             if self.cur is None and self.calls:

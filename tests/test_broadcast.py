@@ -86,32 +86,6 @@ def test_ring_same_as_index_version():
                 self.crowd[idx] = b
                 self.cw = (self.cw + n) % len(self.crowd)
 
-        def render(self, out):
-            frames = out.shape[0]
-            out[:] = 0
-            with self.lock:
-                avail = (self.cw - self.cr) % len(self.crowd)
-                if avail > B.RATE:
-                    self.cr = (self.cw - int(0.2 * B.RATE)) % len(self.crowd); avail = int(0.2 * B.RATE); self.skips += 1
-                if not self.crowd_on and avail >= int(0.2 * B.RATE):
-                    self.crowd_on = True
-                if self.crowd_on:
-                    if avail >= frames:
-                        idx = (self.cr + np.arange(frames)) % len(self.crowd)
-                        out += self.crowd[idx] * (10 ** (self.cfg["crowd_db"] / 20.0))
-                        self.cr = (self.cr + frames) % len(self.crowd)
-                    else:
-                        self.crowd_on = False; self.underruns += 1
-                if self.cur is None and self.calls:
-                    self.cur, self.pos = self.calls.pop(0), 0
-                if self.cur is not None:
-                    n = min(frames, len(self.cur) - self.pos)
-                    seg = self.cur[self.pos:self.pos + n]
-                    out[:n, 0] += seg; out[:n, 1] += seg
-                    self.pos += n
-                    if self.pos >= len(self.cur):
-                        self.cur = None
-            np.clip(out, -0.98, 0.98, out=out)
 
     rng = np.random.default_rng(5)
     a, b = Old(log=lambda m: None), B.Player(log=lambda m: None)
@@ -121,10 +95,7 @@ def test_ring_same_as_index_version():
         n = int(rng.choice([2048, 1500, 977, 3000, 120000 if i == 250 else 2048]))
         blk = (rng.standard_normal((n, 2)) * 0.1).astype(np.float32)
         a.add_crowd(blk); b.add_crowd(blk)
-        for _ in range(int(rng.integers(0, 4))):
-            a.render(oa); b.render(ob)
-            assert np.array_equal(oa, ob)
-        assert a.cw == b.cw and a.cr == b.cr and np.array_equal(a.crowd, b.crowd)
+        assert a.cw == b.cw and np.array_equal(a.crowd, b.crowd)
 
 
 def test_put_message_bytes_unchanged():
@@ -143,3 +114,64 @@ def test_put_message_bytes_unchanged():
 def test_keyup_tail_cached_identical():
     assert np.array_equal(B._fixed(B.keyup_click, B.RATE, 1), B.keyup_click())
     assert np.array_equal(B._fixed(B.squelch_tail, B.RATE, 2), B.squelch_tail())
+
+
+def _drift_run(producer_speed, seconds=120):
+    """Crowd made on one clock, played on another running at a different speed: count gaps after the warm-up."""
+    p = B.Player(log=lambda m: None)
+    out = np.zeros((1024, 2), np.float32)
+    made = played = 0.0
+    blk = np.full((2048, 2), 0.05, np.float32)
+    t, dt = 0.0, 1024 / B.RATE
+    gaps_after_warmup = 0
+    while t < seconds:
+        made += dt * B.RATE * producer_speed
+        while made >= 2048:
+            p.add_crowd(blk); made -= 2048
+        before = p.underruns
+        p.render(out)
+        if t > 5 and p.underruns > before:
+            gaps_after_warmup += 1
+        t += dt
+    return gaps_after_warmup, p
+
+
+def test_clock_drift_never_runs_dry():
+    """2026-10-29: two sound cards 0.3 % apart (either way) - no gaps once playing (before: a gap every few seconds)."""
+    for speed in (0.997, 1.0, 1.003):
+        gaps, p = _drift_run(speed)
+        assert gaps == 0, (speed, gaps)
+        assert p.skips == 0
+
+
+def test_queue_stays_near_target():
+    gaps, p = _drift_run(1.002, seconds=60)
+    avail = (p.cw - p.cr) % len(p.crowd)
+    assert abs(avail - B.Player.TARGET * B.RATE) < 0.08 * B.RATE
+
+
+def test_bursty_delivery_never_runs_dry():
+    """The headset stream hands the crowd over in bursts (8 blocks at once, then ~0.34 s of nothing): no gaps."""
+    import time as _t
+    p = B.Player(log=lambda m: None)
+    clock = [1000.0]
+    orig = B.time.monotonic
+    B.time.monotonic = lambda: clock[0]
+    try:
+        out = np.zeros((1024, 2), np.float32)
+        blk = np.full((2048, 2), 0.05, np.float32)
+        dt = 1024 / B.RATE
+        next_burst, t, gaps = 0.0, 0.0, 0
+        while t < 90:
+            if t >= next_burst:
+                for _ in range(8):
+                    p.add_crowd(blk)
+                next_burst += 8 * 2048 / B.RATE * 1.001
+            before = p.underruns
+            p.render(out)
+            if t > 10 and p.underruns > before:
+                gaps += 1
+            t += dt; clock[0] += dt
+        assert gaps == 0
+    finally:
+        B.time.monotonic = orig
