@@ -2659,7 +2659,10 @@ def main():
     # iRacing + VR load the PC - run the whole app at High priority (the sim itself is protected by its anti-cheat)
     try:
         import ctypes
-        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000080)
+        k = ctypes.windll.kernel32
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        k.SetPriorityClass(k.GetCurrentProcess(), 0x00000080)
     except Exception:
         pass
     ico = ensure_icon()

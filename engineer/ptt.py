@@ -133,12 +133,15 @@ class Listener:
 
 
 def _priority(below):
-    """Windows: drop this program to below-normal priority for a moment (and back)."""
+    """Windows: lower THIS THREAD (the recogniser) to below normal for a moment, and back.
+    #538 (2026-10-29): this used to lower the whole program to below normal and "restore" it to plain normal, which
+    undid the High priority the app sets for its sound (radio / crowd chopped while it listened, and High never stuck).
+    Now only the recogniser's thread steps down; the program keeps its High priority."""
     try:
         import ctypes
         k = ctypes.windll.kernel32
-        k.GetCurrentProcess.restype = ctypes.c_void_p
-        k.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
-        return bool(k.SetPriorityClass(k.GetCurrentProcess(), 0x4000 if below else 0x20))
+        k.GetCurrentThread.restype = ctypes.c_void_p
+        k.SetThreadPriority.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        return bool(k.SetThreadPriority(k.GetCurrentThread(), -1 if below else 0))
     except Exception:
         return False
