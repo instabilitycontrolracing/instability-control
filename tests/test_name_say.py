@@ -34,3 +34,16 @@ def test_standin_without_sounds_like_says_name_as_written(monkeypatch):
 def test_settings_has_sounds_like():
     from engineer.settings import Settings
     assert Settings().driver_name_say == ""
+
+
+def test_crash_trace_file(tmp_path, monkeypatch):
+    """#572: the fault handler file is created with a start header."""
+    import faulthandler
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    from engineer import app
+    app._crash_trace()
+    try:
+        txt = (tmp_path / "RaceEngineer" / "crash_trace.txt").read_text()
+        assert "=== started" in txt and faulthandler.is_enabled()
+    finally:
+        faulthandler.disable()

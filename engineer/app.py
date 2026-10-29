@@ -2679,8 +2679,30 @@ def _orchestrate(win, api, rect, k, ico):
     api._q.put({"t": "reveal"})
 
 
+def _crash_trace():
+    """#572 (2026-10-29): two crashes on 10-28 (Windows heap error 0xc0000374) left no trace. Python's own fault handler
+    writes every thread's stack to %LOCALAPPDATA%\\RaceEngineer\\crash_trace.txt when the program dies that way (no
+    Windows setting changed). The file is opened once and kept open (it has to be ready when the crash comes); it holds
+    the last 5 starts' headers plus any trace, and is cut back when it passes 1 MB."""
+    try:
+        import faulthandler
+        d = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "RaceEngineer")
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, "crash_trace.txt")
+        if os.path.exists(p) and os.path.getsize(p) > 1_000_000:
+            os.replace(p, p + ".old")
+        f = open(p, "a", encoding="utf-8")
+        f.write(f"\n=== started {time.strftime('%Y-%m-%d %H:%M:%S')} pid {os.getpid()} version {VERSION}\n")
+        f.flush()
+        faulthandler.enable(file=f, all_threads=True)
+        globals()["_CRASH_FILE"] = f
+    except Exception:
+        pass
+
+
 def main():
     import webview
+    _crash_trace()
     _win_setup_process()
     # 2026-10-27 (#451): the engineer's sound (radio, crowd, car sound) must never wait behind other programs while
     # iRacing + VR load the PC - run the whole app at High priority (the sim itself is protected by its anti-cheat)
