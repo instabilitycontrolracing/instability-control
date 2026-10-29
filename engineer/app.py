@@ -2702,7 +2702,8 @@ def _crash_trace():
 
 def main():
     import webview
-    _crash_trace()
+    if os.environ.get("IC_CRASH_TRACE"):   # off by default: on Windows the fault handler also writes a full dump for
+        _crash_trace()                     # harmless handled COM errors (0x8001010d from the window) - noise + work
     _win_setup_process()
     # 2026-10-27 (#451): the engineer's sound (radio, crowd, car sound) must never wait behind other programs while
     # iRacing + VR load the PC - run the whole app at High priority (the sim itself is protected by its anti-cheat)
