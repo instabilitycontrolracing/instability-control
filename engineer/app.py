@@ -1793,9 +1793,29 @@ class Api:
         if not getattr(self._s, "remote_on", True):
             return
         from .remote import Remote
+        # #320 (2026-10-29): the iPad key must never change by itself (a settings file that fails to load used to
+        # start a fresh key and the iPad lost its connection). The key is also kept in its own small file and
+        # restored from there before a new one is ever made.
+        import os
+        keep = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "RaceEngineer", "remote_token.txt")
+        if not self._s.remote_token:
+            try:
+                with open(keep, encoding="utf-8") as f:
+                    old = f.read().strip()
+                if old:
+                    self._s.remote_token = old; self._s.save()
+                    self._log("[ipad] key restored from remote_token.txt")
+            except OSError:
+                pass
         if not self._s.remote_token:
             import secrets
             self._s.remote_token = secrets.token_urlsafe(9); self._s.save()
+        try:
+            os.makedirs(os.path.dirname(keep), exist_ok=True)
+            with open(keep, "w", encoding="utf-8") as f:
+                f.write(self._s.remote_token)
+        except OSError:
+            pass
         self._remote = Remote(self, port=self._s.remote_port, token=self._s.remote_token, log=self._log)
         self._remote.start()
 
