@@ -648,7 +648,7 @@ body.tmmode #timing { display: block; }
     </div>
     <div class="zone r">
       <div class="stack" style="align-items:flex-end;gap:5px"><div class="lbl" id="cls">Class</div><span class="chip wait" id="chip"><i></i><span id="chipT">Connecting</span></span></div>
-      <div class="seg"><button class="lapbtn" id="tmBtn">TIMING</button><button class="lapbtn" id="lapBtn">LAP ANALYSIS</button><button class="lapbtn" id="fxBtn" onclick="location.href='review.html'+location.search">DEBRIEF</button><button class="lapbtn" id="setupBtn" onclick="location.href='setup.html'+location.search">SETUP</button></div>
+      <div class="seg"><button class="lapbtn" id="tmBtn">TIMING</button><button class="lapbtn" id="lapBtn">LAP ANALYSIS</button><button class="lapbtn" id="fxBtn" onclick="location.href='debrief.html'+location.search">DEBRIEF</button><button class="lapbtn" id="reviewBtn" onclick="location.href='review.html'+location.search">REVIEW</button><button class="lapbtn" id="setupBtn" onclick="location.href='setup.html'+location.search">SETUP</button></div>
       <div class="pos" id="pos"><small>P</small><span id="posN">–</span><em id="posOf"></em></div>
     </div>
     <div id="slot"></div>
@@ -773,8 +773,8 @@ body.tmmode #timing { display: block; }
 })();
 </script>
 <script>
-(() => {   // #582 (2026-10-30): no session for 10 s -> the SETUP / review page; it comes back here when you go on track.
-  // DASHBOARD on that page keeps you here for the rest of the visit.
+(() => {   // #582 (2026-10-30): no session for 10 s -> the REVIEW page (SETUP one tap away there); it comes back here
+  // when you go on track. DASHBOARD on that page keeps you here for the rest of the visit.
   let since = Date.now();
   setInterval(() => {
     const b = document.body, chipT = document.getElementById("chipT");
@@ -783,7 +783,7 @@ body.tmmode #timing { display: block; }
     if (!waiting) { since = Date.now(); return; }
     let stay = false;
     try { stay = sessionStorage.getItem("re_stay_dash") === "1" || localStorage.getItem("re_auto_setup") === "0"; } catch (e) {}
-    if (!stay && Date.now() - since > 10000) location.href = "setup.html" + (location.search ? location.search + "&auto=1" : "?auto=1");
+    if (!stay && Date.now() - since > 10000) location.href = "review.html" + (location.search ? location.search + "&auto=1" : "?auto=1");
   }, 1000);
 })();
 </script>

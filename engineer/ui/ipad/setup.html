@@ -11,7 +11,8 @@
 <title>Setup</title>
 <!-- #602 (2026-10-30): the suggested setup from the team meeting / My style, laid out exactly like iRacing's garage menu
      (same tabs, section order, field names and units), with a checklist that ticks itself as the garage shows each change.
-     Also the page the iPad opens when there is no session (#582); it goes back to the dashboard when you go on track. -->
+     One tap from REVIEW, the page the iPad opens when there is no session (#582); opened from there it goes back to the
+     dashboard when you go on track. -->
 <style>
 @font-face { font-family: Inter; font-weight: 500; src: url(/assets/Inter-Medium.ttf); }
 @font-face { font-family: Inter; font-weight: 600; src: url(/assets/Inter-SemiBold.ttf); }
@@ -141,6 +142,7 @@ select.pill { -webkit-appearance: none; appearance: none; padding-right: 30px; f
   <div class="seg" id="mode"><button data-m="changes" class="on">CHANGES ONLY</button><button data-m="full">FULL SHEET</button></div>
   <select class="pill" id="hist" title="Earlier suggestions"></select>
   <button class="pill" id="build" title="Build a My style setup from your recent laps now">BUILD FROM MY LAPS</button>
+  <button class="pill" id="review">REVIEW</button>
   <button class="pill" id="back">DASHBOARD</button>
 </header>
 <div class="wrap" id="wrap">

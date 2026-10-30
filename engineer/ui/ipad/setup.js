@@ -149,6 +149,9 @@
   }));
   $("hist").addEventListener("change", (e) => { S.id = e.target.value; loop(); });
   $("build").addEventListener("click", build);
+  $("review").addEventListener("click", () => {           // #582: back to REVIEW (keeps "back to the dashboard on track")
+    location.href = "review.html?" + new URLSearchParams(Object.assign({ k: KEY }, AUTO ? { auto: "1" } : {})).toString();
+  });
   $("back").addEventListener("click", () => {
     try { sessionStorage.setItem("re_stay_dash", "1"); } catch (e) {}
     location.href = "./" + (KEY ? "?k=" + encodeURIComponent(KEY) : "");

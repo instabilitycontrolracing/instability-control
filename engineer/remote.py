@@ -154,11 +154,18 @@ class Remote:
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
                     return self._json(remote.deck(u.path[len("/deck/"):].strip("/")))
-                if u.path in ("/api/review", "/api/fxtrace"):      # forensics (2026-10-27): the night review on the iPad
+                if u.path == "/api/review":                       # #582: the REVIEW page (no session: laps, traces, debrief, setup)
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
                     try:
-                        if u.path == "/api/review":
+                        return self._json(remote.api.review_page((q.get("sid") or [None])[0], (q.get("lap") or [None])[0]))
+                    except Exception as e:
+                        return self._json({"ok": False, "error": repr(e)})
+                if u.path in ("/api/debrief", "/api/fxtrace"):     # forensics (2026-10-27): the night review on the iPad
+                    if not self._ok(q):                           # (#582: was /api/review - that's the REVIEW page now)
+                        return self._send(403, b"no key", "text/plain")
+                    try:
+                        if u.path == "/api/debrief":
                             return self._json(remote.api.fx_review_data())
                         return self._json(remote.api.fx_trace((q.get("sid") or [""])[0], int((q.get("n") or ["0"])[0])))
                     except Exception as e:

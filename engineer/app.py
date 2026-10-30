@@ -2588,6 +2588,15 @@ class Api:
             st.tick(sug["id"], int(i), bool(on))
         return self.setup_sheet(sid)
 
+    def review_page(self, sid=None, lap=None):
+        """#582: the iPad REVIEW page (what it shows when you're not in a session): the last recordings, the chosen
+        one's laps / sectors / traces, its debrief and the setup suggestion. Cached per recording (review_page.py)."""
+        from . import review_page as RP
+        cs, _car, _bias, on = self._sheet_live()
+        return RP.view(sid, lap, store=self._sheet_store(), fx_review=getattr(self, "_fx", None),
+                       can_analyse=lambda: not self._in_car() and not self._sim_running(), run_fx=self._fx_run,
+                       on_track=on, session_live=cs is not None, log=self._log)
+
     def setup_sheet_build(self):
         """The iPad's 'Build from my laps' button: run My style now (it pushes itself)."""
         r = self.style_setup()
