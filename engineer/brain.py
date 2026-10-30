@@ -138,6 +138,9 @@ class Brain:
             return False
         if not self.v.has(sid):
             return False
+        from .voice import TOWING, tow_ok
+        if TOWING and not tow_ok(sid):
+            return False                     # 2026-10-29: no flags / passes / gaps while you're being towed back
         self.cool[key] = now
         self.v.say(sid, fills, prio, max_age=max_age)
         return True
@@ -391,6 +394,15 @@ class Brain:
         try:                                                 # 2026-10-27 (#454): loading screens -> sound waits
             from . import simload
             simload.update(self.src["SessionTick"], log=self.log)
+        except Exception:
+            pass
+        try:                                                 # 2026-10-29: being towed back -> the radio goes quiet
+            tow = float(self.src["PlayerCarTowTime"] or 0) > 0
+            from . import voice as _voice
+            if tow != _voice.TOWING:
+                _voice.TOWING = tow
+                self.log("[radio] towed to the pits - only pit / damage / your own questions until you're back"
+                         if tow else "[radio] tow over - normal radio")
         except Exception:
             pass
         if not self.g("IsOnTrack", False) and not self.g("IsOnTrackCar", False):

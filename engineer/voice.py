@@ -513,6 +513,8 @@ class Voice:
     # ---------- speaking ----------
     def say(self, sid, fills=None, prio=PRIO_INFO, max_age=None):
         """Queue a line. Spotter calls cut off whatever is playing. max_age drops stale messages."""
+        if TOWING and prio == PRIO_SPOTTER:
+            return                               # being towed: nobody to spot for
         with self._cv:
             if prio == PRIO_SPOTTER:
                 # spotter is about now: drop older spotter calls, interrupt lower-priority speech
@@ -551,6 +553,8 @@ class Voice:
     def say_now(self, sid, fills=None, max_age=20.0):
         """Race control (2026-10-25): plays right now - stops whatever this voice or any other voice is saying, jumps
         the queue (even the spotter waits), and is never held back while braking."""
+        if TOWING and not tow_ok(sid):
+            return                               # flags etc. don't matter on the tow truck (penalties still do)
         with self._cv:
             if self.player and self.player.playing_prio is not None:
                 self.player.stop()
@@ -695,6 +699,20 @@ def sound_gaps_logger(log):
 # 2026-10-25 (request: "can I hear the engineer team radio on the iPad?"): every voice that goes on air passes through
 # _Player.play; listeners here (the iPad link) get a copy of the clip as it starts. Never blocks or breaks playback.
 TAPS = []
+# 2026-10-29 (Angelo: "while being towed back to the pits it should not give a bunch of radio stuff for things like
+# flags, cars passing by etc"): set by the brain from iRacing's PlayerCarTowTime. While towing, the automatic calls are
+# held back - only what matters for the pit stop gets through (damage, repairs, fuel, tyres, the pit plan, timers you set,
+# engine warnings) and anything you ask. Spotter and race control stay quiet too.
+TOWING = False
+_TOW_OK = ("damage", "repair", "tb_", "pit_", "req_", "sa_", "rt_", "fuel", "tyre", "tire", "radio_check", "timer_",
+           "engine_", "oil_", "water_", "stop_go", "drive_through", "penalty", "tow")
+
+
+def tow_ok(sid):
+    s = str(sid or "").lower()
+    return any(s.startswith(p) or p in s for p in _TOW_OK)
+
+
 PROC_SOUND = True   # 2026-10-29: sound plays in its own program (audio_proc.py) - no more chop
 
 
