@@ -684,7 +684,7 @@ class Mixer:
                 self.log(f"[crowd] sound program didn't start ({e!r}) - playing in the engineer")
         return self._start_inproc(device)
 
-    AHEAD_S = 0.35                              # the engineer stays this far ahead of the ears
+    AHEAD_S = 0.6                               # the engineer stays this far ahead of the ears
 
     def set_bed(self, bed):
         self.bed = None if bed is None else np.ascontiguousarray(bed, np.float32)
@@ -694,6 +694,12 @@ class Mixer:
 
     def _feed(self, pr):
         """Keeps the sound program AHEAD_S ahead. Not on a deadline: being busy for a moment costs nothing."""
+        if os.name == "nt":                     # 2026-10-29: this thread wins the hand-offs against the engineer's other work
+            try:
+                import ctypes
+                ctypes.windll.kernel32.SetThreadPriority(ctypes.windll.kernel32.GetCurrentThread(), 2)   # HIGHEST
+            except Exception:
+                pass
         blk = np.zeros((self.block, 2), np.float32)
         tap_blk = np.zeros((self.block, 2), np.float32)
         ahead = int(self.rate * self.AHEAD_S)
@@ -709,7 +715,7 @@ class Mixer:
                 pr.set_static(self.static)
                 pr.set_loop_gain(self.bed_gain)
                 n = 0
-                while pr.ahead() < ahead and n < 64 and self.proc is pr:
+                while pr.ahead() < ahead and n < 96 and self.proc is pr:
                     self.render(blk)
                     if not pr.write(blk):
                         break

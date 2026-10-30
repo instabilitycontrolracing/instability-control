@@ -145,6 +145,8 @@ class Player:
     """Runs in the player program. Also used directly by the tests (render without a device)."""
     XF_S = 1.0          # static <-> live blend
     DRY_S = 0.03        # quick blend into the bed when the engineer falls behind
+    REFILL_S = 0.25     # ...and the live sound only comes back once this much is queued (no flutter between the two)
+    BACK_S = 0.3        # blend from the bed back to the live sound
 
     def __init__(self, ctrl, ring, rate, loop_path=""):
         self.ctrl, self.ring, self.rate = ctrl, ring, rate
@@ -152,7 +154,7 @@ class Player:
         self.loop, self.lpos, self.loop_path, self.loop_gen = None, 0, loop_path, -1
         self.g_feed, self.g_bed, self.g_out = 1.0, 0.0, 1.0
         self.cut_seen = int(ctrl[CUT])
-        self.dry_now = False
+        self.dry = False                   # behind: the bed plays until the engineer is REFILL_S ahead again
         self._f = None
 
     def reload_loop(self):
@@ -197,27 +199,35 @@ class Player:
             c[R] = w
             return
         avail = w - r
-        take = min(n, max(0, avail))
+        static = c[MODE] == 1
+        has_loop = self.loop is not None
+        if self.dry and (static or not has_loop or avail >= int(self.rate * self.REFILL_S)):
+            self.dry = False                                   # caught up: the live sound blends back in
+        take = 0 if (self.dry and not static) else min(n, max(0, avail))
         p = r % self.frames; k = min(take, self.frames - p)
         f[:k] = self.ring[p:p + k]
         if take > k:
             f[k:take] = self.ring[:take - k]
         f[take:] = 0
         c[R] = r + take
-        static = c[MODE] == 1
-        has_loop = self.loop is not None
         short = take < n
-        if short and not static and has_loop and self.g_feed > 0.5:
-            c[DRY] += 1                                        # the engineer fell behind - the bed covers it
+        if short and not static and has_loop and not self.dry:
+            self.dry = True                                    # the engineer fell behind - the bed covers it
+            c[DRY] += 1                                        # counted once per time, not per block
         # targets
         if static:
             tf, tb = 0.0, 1.0
-        elif short and has_loop:
-            tf, tb = 1.0, 1.0                                  # whatever feed there is, plus the bed underneath
+        elif self.dry:
+            tf, tb = 0.0, 1.0                                  # the bed alone until the feed is well ahead again
         else:
             tf, tb = 1.0, 0.0
-        speed_f = n / (self.rate * self.XF_S)
-        speed_b = n / (self.rate * (self.DRY_S if (short and not static) else self.XF_S))
+        if static:
+            speed_f = n / (self.rate * self.XF_S)
+        elif self.dry:
+            speed_f = n / (self.rate * self.DRY_S)
+        else:
+            speed_f = n / (self.rate * self.BACK_S)
+        speed_b = n / (self.rate * (self.DRY_S if (self.dry and not static) else self.XF_S))
         g0f, g0b = self.g_feed, self.g_bed
         g1f = min(tf, g0f + speed_f) if tf > g0f else max(tf, g0f - speed_f)
         g1b = min(tb, g0b + speed_b) if tb > g0b else max(tb, g0b - n / (self.rate * 0.4))

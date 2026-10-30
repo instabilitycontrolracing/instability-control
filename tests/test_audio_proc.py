@@ -100,6 +100,26 @@ class PlayerTests(unittest.TestCase):
         self.assertLess(peaks[-1], peaks[0])
 
 
+class NoFlutterTests(unittest.TestCase):
+    def test_slow_engineer_does_not_flutter(self):
+        """A feed arriving at 80% of real time: few long stretches of bed, not a swap every block."""
+        import tempfile
+        t = np.arange(RATE * 4) / RATE
+        bed = (0.3 * np.sin(2 * np.pi * 220 * t)).astype(np.float32)[:, None].repeat(2, 1)
+        p, ctrl, ring = _player(seconds=4.0, loop=bed, tmp=tempfile.mkdtemp())
+        ctrl[A.LOOP_GAIN] = A.SCALE
+        out = np.zeros((1024, 2), np.float32)
+        blk = np.full((819, 2), 0.2, np.float32)
+        swaps, prev = 0, p.dry
+        for _ in range(47 * 20):                       # 20 s
+            _write(ctrl, ring, blk)
+            p.render(out)
+            if p.dry != prev:
+                swaps += 1; prev = p.dry
+        self.assertLess(swaps, 20 * 2)                 # at most about one round trip a second
+        self.assertEqual(int(ctrl[A.DRY]) * 2 >= swaps - 1, True)
+
+
 class BedTests(unittest.TestCase):
     def test_bed_is_seamless(self):
         rng = np.random.default_rng(3)
