@@ -88,6 +88,14 @@ def _counter_rate(sess, laps):
     return (c / n) if n else None
 
 
+def _session_nums(sess):
+    try:
+        v = sess.d.get("SessionNum")
+        return sorted(set(int(x) for x in np.unique(v))) if v is not None else None
+    except Exception:
+        return None
+
+
 def sessions_for(car_path, limit=6, sessions=None):
     """Your recent recordings of this car (any track), newest first; real driving only (no replay recordings)."""
     out = []
@@ -226,6 +234,15 @@ def build(car_path=None, limit=6, sessions=None, open_fn=None, log=print):
     if not weak:
         notes.append("No weakness repeats across your sessions: the car suits how you drive. Keep the setup and work on consistency.")
     notes.append("Make one change, run 3 laps, compare in Analysis. Keep it only if the lap is faster or the car is easier.")
+    # #602: the setup these values came from (iRacing's CarSetup of the newest session), for the iPad SETUP sheet
+    src = {}
+    if latest is not None:
+        from .setup_sheet import session_label
+        wk = (latest.info.get("WeekendInfo") or {}) if isinstance(getattr(latest, "info", None), dict) else {}
+        src = {"carsetup": getattr(latest, "setup", None) or {}, "car_path": getattr(latest, "car_path", "") or car_path or "",
+               "track": getattr(latest, "track_display", ""), "session": session_label(getattr(latest, "info", None) or {}, _session_nums(latest)),
+               "date": str((wk.get("WeekendOptions") or {}).get("Date") or "")}
     return {"ok": True, "car": car_name, "kind": kind, "sessions": [{"track": u["track"], "laps": u["laps"]} for u in used],
+            "source": src,
             "traits": traits, "weak": [{k: w[k] for k in ("label", "rate", "n", "of", "sessions", "corners")} for w in weak[:5]],
             "changes": changes, "notes": notes}

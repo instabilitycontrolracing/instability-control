@@ -171,6 +171,10 @@ class Remote:
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
                     return self._json(remote.api.setup_guide_status())
+                if u.path == "/api/setupsheet":                   # #602: the SETUP sheet (garage layout + suggestion)
+                    if not self._ok(q):
+                        return self._send(403, b"no key", "text/plain")
+                    return self._json(remote.api.setup_sheet((q.get("id") or [None])[0]))
                 path = urllib.parse.unquote(u.path)
                 if path.startswith("/ipad/"):
                     rel = path[len("/ipad/"):] or "index.html"
@@ -222,6 +226,14 @@ class Remote:
                         out = a.setup_guide_stop()
                     else:
                         out = a.setup_guide_status()
+                elif u.path == "/api/setupsheet":                 # #602: tick a change / build from my laps
+                    act = body.get("action")
+                    if act == "tick":
+                        out = a.setup_sheet_tick(body.get("id"), body.get("i", -1), body.get("on", True))
+                    elif act == "build":
+                        out = a.setup_sheet_build()
+                    else:
+                        out = a.setup_sheet(body.get("id"))
                 elif u.path == "/api/ask":
                     t = (body.get("text") or "").strip()
                     if t:

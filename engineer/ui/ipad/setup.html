@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05070C">
+<meta name="color-scheme" content="dark">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Setup</title>
+<!-- #602 (2026-10-30): the suggested setup from the team meeting / My style, laid out exactly like iRacing's garage menu
+     (same tabs, section order, field names and units), with a checklist that ticks itself as the garage shows each change.
+     Also the page the iPad opens when there is no session (#582); it goes back to the dashboard when you go on track. -->
+<style>
+@font-face { font-family: Inter; font-weight: 500; src: url(/assets/Inter-Medium.ttf); }
+@font-face { font-family: Inter; font-weight: 600; src: url(/assets/Inter-SemiBold.ttf); }
+@font-face { font-family: Inter; font-weight: 700; src: url(/assets/Inter-Bold.ttf); }
+@font-face { font-family: Cormorant; font-weight: 700; src: url(/assets/CormorantGaramond-Bold.ttf); }
+@font-face { font-family: Timing; font-weight: 500; src: url(/assets/RaycerRay-F125-Font-Timing-Medium.ttf); }
+@font-face { font-family: Timing; font-weight: 700; src: url(/assets/RaycerRay-F125-Font-Timing-Bold.ttf); }
+:root {
+  --bg0: #05070C; --ivory: #F5F3EE; --t2: #D5DAE3; --t3: #8E98AC; --t4: #5E6880;
+  --gold: #D8B46A; --gold2: #F0CD7E; --gold3: #B8964C; --green: #34D27B; --yellow: #FFC93C;
+  --well: rgba(3,6,13,.6); --rule: rgba(255,255,255,.075); --rule2: rgba(255,255,255,.13);
+  --num: Timing, Inter, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg0); color: var(--ivory); font-family: Inter, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+body { padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 28px max(20px, env(safe-area-inset-left));
+  font-feature-settings: "tnum" 1, "lnum" 1; user-select: none; -webkit-user-select: none; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(1200px 520px at 50% -160px, rgba(197,165,114,.13), transparent 70%),
+              radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,.45)); }
+button { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; cursor: pointer; }
+
+/* ---------------- header */
+header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+header h1 { margin: 0; font: 700 34px/1 Cormorant, serif; letter-spacing: .04em; }
+.where { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.where .a { font: 600 14px Inter; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.where .b { font: 500 12px Inter; color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.where .b i { font-style: normal; color: var(--gold2); }
+.pill { height: 36px; padding: 0 15px; border-radius: 18px; border: 0; font: 700 11px Inter; letter-spacing: .14em; color: var(--gold2);
+  background: rgba(255,216,118,.08); box-shadow: inset 0 0 0 1px rgba(255,216,118,.3); white-space: nowrap; }
+.seg { display: inline-flex; height: 36px; padding: 3px; border-radius: 18px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px var(--rule2); }
+.seg button { height: 30px; padding: 0 14px; border-radius: 15px; border: 0; background: transparent; font: 700 11px Inter; letter-spacing: .12em; color: var(--t3); }
+.seg button.on { background: var(--gold2); color: #12141a; }
+select.pill { -webkit-appearance: none; appearance: none; padding-right: 30px; font: 600 12px Inter; letter-spacing: .02em;
+  background: rgba(255,216,118,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23F0CD7E' fill='none' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center; max-width: 250px; }
+
+/* ---------------- layout */
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+.wrap.solo { grid-template-columns: 1fr; }
+.panel { border-radius: 14px; background: var(--well); box-shadow: inset 0 0 0 1px var(--rule); }
+
+/* ---------------- the garage sheet (iRacing's menu) */
+.garage { padding: 0 0 18px; overflow: hidden; }
+.gtop { display: flex; align-items: baseline; gap: 10px; padding: 16px 22px 0; }
+.gtop .gt { font: 700 15px Inter; color: var(--gold); font-style: italic; letter-spacing: .01em; }
+.gtop .gn { font: 600 15px Inter; color: var(--ivory); }
+.gtop .gu { margin-left: auto; font: 600 10px Inter; letter-spacing: .16em; text-transform: uppercase; color: var(--t4); }
+.tabs { display: flex; gap: 26px; padding: 12px 22px 0; border-bottom: 1px solid var(--rule); }
+.tab { position: relative; padding: 8px 0 10px; border: 0; background: transparent; font: 700 15px Inter; letter-spacing: .02em; color: var(--t3); text-transform: uppercase; }
+.tab.on { color: var(--blue, #6AA8FF); color: #8CB8FF; }
+.tab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: #3B82F6; border-radius: 2px; }
+.tab b { display: inline-grid; place-items: center; min-width: 19px; height: 19px; margin-left: 7px; padding: 0 5px; border-radius: 10px; background: var(--gold2); color: #12141a; font: 700 11px Inter; vertical-align: 2px; }
+.sheet { padding: 6px 22px 0; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; }
+.row.one { grid-template-columns: minmax(0, 560px); justify-content: center; }
+.sec { margin-top: 14px; }
+.sec h3 { margin: 0 0 6px; padding: 5px 10px; font: 700 11.5px Inter; letter-spacing: .04em; color: #F2C230; background: rgba(255,255,255,.035); border-radius: 3px; text-transform: uppercase; }
+.sec .none { padding: 4px 10px; font: 500 12px Inter; color: var(--t4); }
+.f { display: grid; grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1.15fr) 14px; align-items: center; column-gap: 7px; min-height: 27px; padding: 2px 8px; border-radius: 4px; }
+.f .l { text-align: right; font: 500 13px Inter; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f .l::after { content: ":"; }
+.f .ar { font: 600 13px Inter; color: var(--t4); text-align: center; }
+.f .v { font: 600 13.5px var(--num); color: var(--ivory); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .01em; }
+.f .v .x { color: var(--t4); }
+.f.ro .v { color: var(--t2); }
+.f.dim { opacity: .38; }
+.f.extra .l { font-style: italic; }
+.f.ch { background: linear-gradient(90deg, rgba(216,180,106,.22), rgba(216,180,106,.12)); box-shadow: inset 0 0 0 1px rgba(240,205,126,.45); padding-top: 5px; padding-bottom: 5px; margin: 3px 0; }
+.f.ch .l { color: var(--ivory); font-weight: 600; }
+.f.ch .ar { color: var(--gold2); }
+.f.ch .v { color: var(--gold2); overflow: visible; }
+.f.ch .v s { text-decoration: none; color: var(--t2); }
+.f.ch .v s::after { content: "  →  "; color: var(--gold); }
+.f.ch.done { background: linear-gradient(90deg, rgba(52,210,123,.18), rgba(52,210,123,.08)); box-shadow: inset 0 0 0 1px rgba(52,210,123,.5); }
+.f.ch.done .v { color: #86EFAC; }
+.f .why { grid-column: 1 / -1; display: flex; gap: 8px; align-items: baseline; padding: 4px 4px 1px; font: 500 12px/1.4 Inter; color: var(--t2); }
+.f .why em { flex: none; font: 700 10.5px Inter; font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: #12141a; background: var(--gold2); padding: 2px 7px; border-radius: 4px; }
+.f.ch.done .why em { background: var(--green); }
+.f .tag { font: 700 9px Inter; letter-spacing: .12em; color: var(--green); margin-left: 6px; vertical-align: 1px; }
+.notes { padding: 26px 22px; font: 500 14px/1.5 Inter; color: var(--t3); }
+.empty { padding: 60px 30px; text-align: center; }
+.empty h2 { margin: 0 0 8px; font: 700 26px Cormorant, serif; letter-spacing: .03em; }
+.empty p { margin: 0 auto 18px; max-width: 520px; font: 500 14px/1.5 Inter; color: var(--t3); }
+
+/* ---------------- checklist */
+.side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+.card { padding: 14px 16px 16px; }
+.lbl { font: 700 10px Inter; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+.prog { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 10px; }
+.prog .n { font: 700 30px var(--num); }
+.prog .n small { font: 500 15px var(--num); color: var(--t3); }
+.prog .s { font: 500 12px Inter; color: var(--t3); }
+.bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 12px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold3), var(--gold2)); transition: width .6s; }
+.item { display: grid; grid-template-columns: 30px 1fr; gap: 11px; width: 100%; text-align: left; padding: 11px 10px; margin-top: 7px; border: 0; border-radius: 10px;
+  background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ivory); }
+.item .k { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 700 13px Inter; color: var(--t2); box-shadow: inset 0 0 0 1.5px var(--t4); }
+.item .t { font: 600 14px/1.3 Inter; }
+.item .h { margin-top: 3px; font: 700 12px Inter; color: var(--gold2); }
+.item .fv { margin-top: 5px; font: 500 12px var(--num); color: var(--t2); }
+.item .fv span { display: block; margin-top: 2px; }
+.item .fv u { display: block; text-decoration: none; font: 500 11px Inter; color: var(--t3); letter-spacing: .01em; }
+.tabh { margin: 18px 0 0; font: 700 13px Inter; letter-spacing: .06em; color: var(--t3); border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+.tabh:first-child { margin-top: 10px; }
+.item .fv b { color: var(--gold2); font-weight: 700; }
+.item .r { margin-top: 5px; font: 500 12px/1.4 Inter; color: var(--t3); }
+.item .st { margin-top: 7px; font: 700 10px Inter; letter-spacing: .14em; color: var(--t3); }
+.item.done { box-shadow: inset 0 0 0 1px rgba(52,210,123,.5); background: rgba(52,210,123,.07); }
+.item.done .k { background: var(--green); color: #08120c; box-shadow: none; }
+.item.done .st { color: var(--green); }
+.item.check { box-shadow: inset 0 0 0 1px rgba(255,201,60,.55); background: rgba(255,201,60,.06); }
+.item.check .st { color: var(--yellow); }
+.small { font: 500 12px/1.5 Inter; color: var(--t3); margin: 6px 0 0; }
+.src { display: flex; align-items: center; gap: 8px; font: 600 11px Inter; color: var(--t3); }
+.src i { width: 7px; height: 7px; border-radius: 50%; background: var(--t4); }
+.src.live i { background: var(--green); box-shadow: 0 0 0 3px rgba(52,210,123,.16), 0 0 8px var(--green); }
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); padding: 10px 18px; border-radius: 20px; background: #10141d; box-shadow: inset 0 0 0 1px rgba(216,180,106,.4); font: 600 13px Inter; color: var(--gold2); opacity: 0; transition: opacity .3s; pointer-events: none; }
+.toast.on { opacity: 1; }
+.fixture { position: fixed; right: 18px; bottom: 12px; font: 700 10px Inter; letter-spacing: .14em; color: var(--yellow); background: rgba(0,0,0,.6); padding: 5px 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255,201,60,.5); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Setup</h1>
+  <div class="where"><span class="a" id="whereA">Loading…</span><span class="b" id="whereB"></span></div>
+  <div class="seg" id="mode"><button data-m="changes" class="on">CHANGES ONLY</button><button data-m="full">FULL SHEET</button></div>
+  <select class="pill" id="hist" title="Earlier suggestions"></select>
+  <button class="pill" id="build" title="Build a My style setup from your recent laps now">BUILD FROM MY LAPS</button>
+  <button class="pill" id="back">DASHBOARD</button>
+</header>
+<div class="wrap" id="wrap">
+  <section class="panel garage" id="garage"></section>
+  <aside class="side" id="side"></aside>
+</div>
+<div class="toast" id="toast"></div>
+<script src="setup.js"></script>
+</body>
+</html>

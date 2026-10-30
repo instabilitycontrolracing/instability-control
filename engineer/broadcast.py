@@ -45,7 +45,37 @@ class Link:
         self.connected = False
         self.running = True
         self._started_at = 0.0
+        self.mixer = None                              # the crowd mixer (watch()): its bed goes to the player too
+        self._bed_sent, self._gain_sent, self._bed_check = None, None, 0.0
         threading.Thread(target=self._loop, daemon=True, name="broadcast-link").start()
+
+    def watch(self, mixer):
+        """2026-10-30 (#604): the player gets the crowd's recorded loop (the bed) and its level, so when the crowd
+        arrives late it blends into the bed - exactly what the headset player does - instead of going silent."""
+        self.mixer = mixer
+
+    def _send_bed(self):
+        m = self.mixer
+        if m is None or not self.connected:
+            return
+        try:
+            bed = getattr(m, "bed", None)
+            if bed is not None and bed is not self._bed_sent and getattr(bed, "ndim", 0) == 2 and bed.shape[1] == 2:
+                a = np.ascontiguousarray(bed, np.float32)
+                msg = bytearray(HDR.size + a.nbytes)
+                HDR.pack_into(msg, 0, 4, RATE, 2, a.shape[0])
+                msg[HDR.size:] = memoryview(a).cast("B")
+                self.sock.sendall(msg)                 # (this thread owns the socket)
+                self._bed_sent = bed
+            g = float(getattr(m, "bed_gain", 0.0) or 0.0)
+            if self._gain_sent is None or abs(g - self._gain_sent) > 1e-3:
+                js = json.dumps({"bed_gain": g}).encode()
+                self.sock.sendall(HDR.pack(3, 0, 0, len(js)) + js)
+                self._gain_sent = g
+        except OSError:
+            raise
+        except Exception as e:
+            self.log(f"[broadcast] bed: {e!r}")
 
     # ---- taps (called from the audio threads: never block)
     def clip(self, audio, sr):
@@ -114,6 +144,14 @@ class Link:
             self.push_settings()
 
     def _loop(self):
+        # 2026-10-30 (#604): this thread hands the crowd over; at normal priority it waited behind the engineer's other
+        # work and then delivered in big bursts (the player ran dry, then had too much). Same priority as the crowd feed.
+        if os.name == "nt":
+            try:
+                import ctypes
+                ctypes.windll.kernel32.SetThreadPriority(ctypes.windll.kernel32.GetCurrentThread(), 2)   # HIGHEST
+            except Exception:
+                pass
         while self.running:
             if not getattr(self.s, "bcast_on", True):
                 self._close()
@@ -126,17 +164,27 @@ class Link:
                     self.sock = s
                     while not self.q.empty():
                         self.q.get_nowait()
+                    self._bed_sent = self._gain_sent = None    # a new player: send the bed again
                     self._set_connected(True)
                 except OSError:
                     self._start_player()
                     time.sleep(2)
                     continue
             try:
+                now = time.monotonic()
+                if now - self._bed_check > 0.5:
+                    self._bed_check = now
+                    self._send_bed()
                 msg = self.q.get(timeout=0.5)
-                self.sock.sendall(msg)
+                s = self.sock
+                if s is None:
+                    continue
+                s.sendall(msg)
             except queue.Empty:
                 try:
-                    self.sock.sendall(HDR.pack(0, 0, 0, 0))   # keep-alive
+                    s = self.sock
+                    if s is not None:                     # (stop() may have closed it meanwhile)
+                        s.sendall(HDR.pack(0, 0, 0, 0))   # keep-alive
                 except OSError:
                     self._close()
             except OSError:
@@ -243,24 +291,59 @@ def build_call(x, sr, grit=1.0, db=6.0, keyup=True):
 class Player:
     def __init__(self, log=print):
         self.log = log
-        self.cfg = {"grit": 1.0, "db": 6.0, "keyup": True, "crowd_db": 0.0}
+        self.cfg = {"grit": 1.0, "db": 6.0, "keyup": True, "crowd_db": 0.0, "bed_gain": 0.0}
         self.calls = []                                    # queued calls (numpy mono)
         self.cur, self.pos = None, 0
-        self.crowd = np.zeros((RATE * 2, 2), np.float32)   # 2 s ring
+        self.crowd = np.zeros((int(RATE * self.RING_S), 2), np.float32)
         self.cw = self.cr = 0
+        self.queued = 0                                    # crowd frames waiting (exact; the ring never wraps onto itself)
         self.crowd_on = False
         self.frac = 0.0
-        self.arrivals, self.last_arrival = collections.deque(maxlen=2000), 0.0
-        self.underruns = self.skips = 0
+        # pauses between deliveries, as a sliding-window maximum (each entry is bigger than every later one): the
+        # longest pause of the window is always arrivals[0], found without a scan in the sound card's callback
+        self.arrivals, self.last_arrival = collections.deque(), 0.0
+        self.underruns = self.skips = self.dropped = self.dev_gaps = 0
         self.lock = threading.Lock()
+        # the bed (the same recorded crowd loop the headset player falls back on), sent by the engineer
+        self.bed, self.bpos = None, 0
+        self.g_feed = self.g_bed = 0.0
+        self._bufs(4096)
 
-    def device(self):
+    def _bufs(self, n):
+        """Work buffers made once (the sound card's callback allocates nothing in the normal case)."""
+        self._n = n
+        self._ar = np.arange(n, dtype=np.float64)
+        self._pos = np.empty(n, np.float64)
+        self._fl = np.empty(n, np.float64)
+        self._i0 = np.empty(n, np.intp)
+        self._i1 = np.empty(n, np.intp)
+        self._w = np.empty((n, 2), np.float32)
+        self._a = np.empty((n, 2), np.float32)
+        self._b = np.empty((n, 2), np.float32)
+        self._seg = np.empty((n, 2), np.float32)
+        self._ramp_buf = np.empty((n, 2), np.float32)        # full width: no numpy scratch buffer per multiply
+        self._ar2 = np.repeat(self._ar[:, None], 2, axis=1).astype(np.float32)
+        self._wd = np.empty(n, np.float64)
+
+    def device(self, wasapi=False):
+        """The silent output. wasapi=True (setting bcast_wasapi) prefers its Windows WASAPI entry; otherwise the first
+        match in PortAudio's list, as before (on Windows that is usually the DirectSound entry)."""
         import sounddevice as sd
         devs = sd.query_devices()
+        try:
+            apis = [a["name"] for a in sd.query_hostapis()]
+        except Exception:
+            apis = []
         for want in DEVICES:
-            for i, d in enumerate(devs):
-                if want.lower() in d["name"].lower() and d["max_output_channels"] >= 2:
-                    return i, d["name"]
+            hits = [(i, d) for i, d in enumerate(devs)
+                    if want.lower() in d["name"].lower() and d["max_output_channels"] >= 2]
+            if wasapi:
+                w = [(i, d) for i, d in hits if d.get("hostapi", -1) < len(apis) and "WASAPI" in apis[d["hostapi"]]]
+                hits = w + hits
+            if hits:
+                i, d = hits[0]
+                api = apis[d["hostapi"]] if d.get("hostapi", -1) < len(apis) else "?"
+                return i, f"{d['name']} ({api})"
         return None, None
 
     def add_call(self, x, sr):
@@ -269,6 +352,12 @@ class Player:
         with self.lock:
             self.calls.append(call)
 
+    def set_bed(self, bed):
+        bed = np.ascontiguousarray(np.asarray(bed, np.float32).reshape(-1, 2))
+        with self.lock:
+            self.bed = bed if len(bed) > RATE // 4 else None
+            self.bpos = 0
+
     def add_crowd(self, b):
         n = len(b)
         L = len(self.crowd)
@@ -276,64 +365,162 @@ class Player:
             # 2026-10-29 (efficiency): two slice copies around the ring end instead of an index array per block
             now = time.monotonic()
             if self.last_arrival:
-                self.arrivals.append((now, now - self.last_arrival))
+                gap = now - self.last_arrival
+                ar = self.arrivals
+                while ar and ar[-1][1] <= gap:
+                    ar.pop()
+                ar.append((now, gap))
             self.last_arrival = now
             w, end = self.cw, (self.cw + n) % L
-            if n > L:                                 # never expected: only the newest 2 s survive, where they always went
+            if n > L:                                 # never expected: only the newest part survives, where it always went
                 w, b, n = (w + n - L) % L, b[-L:], L
             k = min(n, L - w)
             self.crowd[w:w + k] = b[:k]
             if n > k:
                 self.crowd[:n - k] = b[k:]
             self.cw = end
+            self.queued += n
+            if self.queued > L - 4096:                # (8 s ring: only if the player itself stopped) keep the newest
+                over = self.queued - (L - 4096)
+                self.cr = (self.cr + over) % L
+                self.queued -= over
+                self.dropped += 1
 
     # 2026-10-29 evening: the crowd arrives on the headset card's clock and plays on another card's clock; the two never
     # tick at exactly the same speed, so the queue slowly emptied (1-3 audible "ran dry" gaps a minute even with the PC
     # idle) or filled up. Now the player gently speeds up / slows down the crowd (at most 0.5 %, inaudible) to keep the
-    # queue at TARGET - no gaps from drift, and the queue can stay small (less delay).
-    TARGET = 0.12              # seconds of crowd kept queued at least
-    TARGET_MAX = 0.6           # ...and at most
-    MAX_TRIM = 0.005           # largest speed correction (0.5 %)
-    # The crowd also arrives in bursts (the headset stream hands over several blocks at once, then nothing for a while):
-    # the queue must cover the longest pause between deliveries seen in the last 30 s (+25 %), whatever that is.
+    # queue at the target - no gaps from drift.
+    # 2026-10-30 (#604, the broadcast log: 1-7 "ran dry" and 0-4 "skipped ahead" EVERY minute of the race; the recordings
+    # had crowd holes of 100-440 ms): the crowd comes from the engineer in bursts (its link thread waits its turn behind
+    # the engineer's other work, then hands over everything at once). The old queue aimed at 0.12 s, forgot a long pause
+    # after 30 s, went SILENT when it ran out (and waited for a whole cushion before coming back), and threw away
+    # everything past 1 s with a hard jump. Now, the same design as the headset player (audio_proc.py):
+    #   * a bigger cushion: at least 0.3 s, and 1.5x the longest pause between deliveries in the last 2 minutes (max 1 s);
+    #   * running low: the recorded crowd loop (the bed) blends in over 30 ms BEFORE the queue is empty, so it never goes
+    #     silent; the live crowd blends back over 0.3 s only once a full cushion is queued again (no flutter);
+    #   * too much queued (a burst after a pause): played a little faster (up to 2 %) until it is back near the target,
+    #     never skipped. Only a queue of more than 4 s (the engineer and the player out of step) is trimmed, with a fade.
+    RING_S = 8.0
+    TARGET = 0.3               # seconds of crowd kept queued at least
+    TARGET_MAX = 1.0           # ...and at most
+    WINDOW_S = 120.0           # how long a long pause between deliveries is remembered
+    MAX_TRIM = 0.005           # normal speed correction (0.5 %)
+    CATCH_TRIM = 0.02          # catching up after a burst (2 %, crowd noise - not heard as a change)
+    SKIP_S = 4.0               # only past this much queued is any crowd dropped (with a fade)
+    LOW_S = 0.06               # blend into the bed when less than this would be left after the block
+    DRY_S = 0.03               # live -> bed blend
+    BACK_S = 0.3               # bed -> live blend
 
     def _target(self):
         now = time.monotonic()
-        while self.arrivals and now - self.arrivals[0][0] > 30.0:
+        while self.arrivals and now - self.arrivals[0][0] > self.WINDOW_S:
             self.arrivals.popleft()
-        worst = max((g for _, g in self.arrivals), default=0.0)
-        return int(min(self.TARGET_MAX, max(self.TARGET, worst * 1.25)) * RATE)
+        worst = self.arrivals[0][1] if self.arrivals else 0.0
+        return int(min(self.TARGET_MAX, max(self.TARGET, worst * 1.5)) * RATE)
+
+    def _ramp(self, g0, g1, n):
+        if g0 == g1:
+            return float(g0)       # a plain float (a numpy float64 makes numpy work in float64: a temporary copy)
+        r = self._ramp_buf[:n]
+        np.multiply(self._ar2[:n], np.float32((g1 - g0) / n), out=r)
+        r += np.float32(g0)
+        return r
+
+    def _crowd_block(self, frames, ratio, out_ab):
+        """frames of the queued crowd at speed ratio (linear interpolation) into out_ab; advances the read point."""
+        L = len(self.crowd)
+        pos, fl, i0, i1, w = self._pos[:frames], self._fl[:frames], self._i0[:frames], self._i1[:frames], self._w[:frames]
+        a, b = out_ab, self._b[:frames]
+        np.multiply(self._ar[:frames], ratio, out=pos)
+        pos += self.frac
+        np.floor(pos, out=fl)
+        wd = self._wd[:frames]
+        np.subtract(pos, fl, out=wd)
+        w[:, 0] = wd
+        w[:, 1] = wd
+        fl += self.cr
+        np.remainder(fl, L, out=fl)
+        np.copyto(i0, fl, casting="unsafe")
+        np.add(i0, 1, out=i1)
+        i1[i1 >= L] -= L
+        np.take(self.crowd, i0, axis=0, out=a, mode="wrap")   # (indices are in range; "raise" buffers the copy)
+        np.take(self.crowd, i1, axis=0, out=b, mode="wrap")
+        b -= a
+        b *= w
+        a += b
+        need = self.frac + frames * ratio
+        step = int(need)
+        self.cr = (self.cr + step) % L
+        self.queued -= step
+        self.frac = need - step
 
     def render(self, out):
         frames = out.shape[0]
+        if frames > self._n:
+            self._bufs(frames)
         out[:] = 0
         with self.lock:
             L = len(self.crowd)
             target = self._target()
-            avail = (self.cw - self.cr) % L
-            if avail > RATE:                              # fell far behind (a stall): skip ahead to the target
-                self.cr = (self.cw - target) % L
+            avail = self.queued
+            cg = 10 ** (self.cfg["crowd_db"] / 20.0)
+            ratio = 1.0
+            if avail > self.SKIP_S * RATE:                # way out of step: drop to the target (faded below)
+                over = avail - target
+                self.cr = (self.cr + over) % L
+                self.queued -= over
                 avail, self.frac = target, 0.0
                 self.skips += 1
+                self.g_feed = 0.0
             if not self.crowd_on and avail >= target:
                 self.crowd_on, self.frac = True, 0.0
             if self.crowd_on:
-                ratio = 1.0 + max(-self.MAX_TRIM, min(self.MAX_TRIM, (avail - target) / RATE * 0.05))
+                err = (avail - target) / RATE
+                hi = self.CATCH_TRIM if avail > (self.TARGET_MAX + 0.25) * RATE else self.MAX_TRIM
+                ratio = 1.0 + max(-self.MAX_TRIM, min(hi, err * 0.05))
                 need = self.frac + frames * ratio
-                if avail >= int(need) + 2:
-                    pos = self.frac + np.arange(frames, dtype=np.float64) * ratio
-                    i0 = pos.astype(np.int64)
-                    w = (pos - i0).astype(np.float32)[:, None]
-                    a = self.crowd[(self.cr + i0) % L]
-                    b = self.crowd[(self.cr + i0 + 1) % L]
-                    g = 10 ** (self.cfg["crowd_db"] / 20.0)
-                    out += (a + (b - a) * w) * g
-                    step = int(need)
-                    self.cr = (self.cr + step) % L
-                    self.frac = need - step
-                else:
-                    self.crowd_on = False                 # truly ran dry (the engineer stalled): cushion again
+                if avail < need + 2 + self.LOW_S * RATE:  # running low: the bed takes over (live fades out on what's left)
+                    self.crowd_on = False
                     self.underruns += 1
+            ratio_now = ratio if self.crowd_on else 1.0
+            have_bed = self.bed is not None and self.cfg.get("bed_gain", 0.0) > 0
+            tf = 1.0 if self.crowd_on else 0.0
+            tb = 0.0 if self.crowd_on else (1.0 if have_bed else 0.0)
+            g0f, g0b = self.g_feed, self.g_bed
+            sf = frames / (RATE * (self.BACK_S if tf > g0f else self.DRY_S))
+            sb = frames / (RATE * (self.DRY_S if tb > g0b else 0.4))
+            g1f = min(tf, g0f + sf) if tf > g0f else max(tf, g0f - sf)
+            g1b = min(tb, g0b + sb) if tb > g0b else max(tb, g0b - sb)
+            if g0f > 0 or g1f > 0:                        # live crowd (also while it fades out)
+                need = self.frac + frames * ratio_now
+                if self.queued >= int(need) + 2:
+                    a = self._a[:frames]
+                    self._crowd_block(frames, ratio_now, a)
+                    a *= self._ramp(g0f * cg, g1f * cg, frames)
+                    out += a
+                else:                                     # (only if a burst was shorter than LOW_S) what's left, faded
+                    m = min(frames, max(0, self.queued - 2))
+                    if m > 0:
+                        a = self._a[:m]
+                        self._crowd_block(m, 1.0, a)
+                        a *= self._ramp(g0f * cg, 0.0, m)
+                        out[:m] += a
+                    g1f = 0.0
+            self.g_feed = g1f
+            bed = self.bed
+            if bed is not None:
+                Lb = len(bed)
+                bg = self.cfg.get("bed_gain", 0.0) * cg
+                if (g0b > 0 or g1b > 0) and bg > 0:
+                    seg = self._seg[:frames]; p = self.bpos; i = 0
+                    while i < frames:
+                        k = min(frames - i, Lb - p)
+                        seg[i:i + k] = bed[p:p + k]
+                        i += k; p = (p + k) % Lb
+                    seg *= self._ramp(g0b * bg, g1b * bg, frames)
+                    out += seg
+                self.bpos = (self.bpos + frames) % Lb     # keeps time while silent: seamless returns
+            self.g_bed = g1b
             # radio: one call at a time, centred
             if self.cur is None and self.calls:
                 self.cur, self.pos = self.calls.pop(0), 0
@@ -346,15 +533,55 @@ class Player:
                     self.cur = None
         np.clip(out, -0.98, 0.98, out=out)
 
+    LATENCY = 0.2              # device cushion (was 0.12; 2026-10-30, #604)
+
     def serve(self):
         import sounddevice as sd
-        dev, name = self.device()
+        from . import audio_proc
+        # 2026-10-30 (#604): this player had normal priority, so with VR + OBS + the 4K encode loading the PC, Windows
+        # could keep it waiting past its 0.12 s cushion. Now it runs like the headset sound program: high priority,
+        # its sound thread registered as "Pro Audio" (MMCSS), no Windows power throttling.
+        self.log("priority: " + audio_proc.boost_process())
+        try:                  # #604: the first radio call imported scipy / the voice code while the sound was playing
+            build_call(np.sin(np.arange(4800) * 0.3).astype(np.float32), RATE)       # loud: warms the limiter too
+        except Exception:
+            pass
+        wasapi = bool(_setting("bcast_wasapi", False))
+        dev, name = self.device(wasapi=wasapi)
         if dev is None:
             self.log("no silent output (Steam Streaming Speakers / CABLE Input) - not starting")
             return
-        stream = sd.OutputStream(samplerate=RATE, channels=2, dtype="float32", device=dev, blocksize=1024, latency=0.12,
-                                 callback=lambda o, f, t, s: self.render(o))
+        mm = audio_proc.ThreadBoost()
+
+        def cb(o, f, t, s):
+            mm.once()
+            if s and s.output_underflow:
+                self.dev_gaps += 1
+            try:
+                self.render(o)
+            except Exception:
+                o[:] = 0
+        kw = {}
+        if wasapi and "WASAPI" in (name or ""):
+            try:
+                kw["extra_settings"] = sd.WasapiSettings(auto_convert=True)
+            except Exception:
+                pass
+        try:
+            stream = sd.OutputStream(samplerate=RATE, channels=2, dtype="float32", device=dev, blocksize=1024,
+                                     latency=self.LATENCY, callback=cb, **kw)
+        except Exception as e:
+            if not kw:
+                raise
+            self.log(f"WASAPI open failed ({e!r}) - using the usual entry")
+            dev, name = self.device(wasapi=False)
+            stream = sd.OutputStream(samplerate=RATE, channels=2, dtype="float32", device=dev, blocksize=1024,
+                                     latency=self.LATENCY, callback=cb)
         stream.start()
+        try:
+            self.log(f"device cushion {stream.latency * 1000:.0f} ms, block 1024")
+        except Exception:
+            pass
         self.log(f"playing the broadcast mix on: {name}")
         srv = socket.socket(); srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         srv.bind(("127.0.0.1", PORT)); srv.listen(1)
@@ -392,21 +619,42 @@ class Player:
         while True:
             if time.time() - last > 60:
                 last = time.time()
-                if self.underruns or self.skips:
-                    self.log(f"crowd gaps in the last minute: {self.underruns} ran dry, {self.skips} skipped ahead")
-                self.underruns = self.skips = 0
+                if self.dev_gaps:
+                    self.log(f"sound card gaps in the last minute: {self.dev_gaps} (this player was late)")
+                    self.dev_gaps = 0
+                if self.underruns or self.skips or self.dropped:
+                    self.log(f"crowd in the last minute: ran low {self.underruns}x (the bed covered it"
+                             f"{'' if self.bed is not None else ' - NO BED YET, so it went quiet'}), "
+                             f"{self.skips} trimmed after falling 4 s out of step, {self.dropped} overfilled")
+                self.underruns = self.skips = self.dropped = 0
             kind, sr, ch, frames = HDR.unpack(read(HDR.size))
             if kind == 0:
                 continue
             if kind == 3:
-                self.cfg.update(json.loads(read(frames)))
-                self.log(f"settings {self.cfg}")
+                d = json.loads(read(frames))
+                quiet = set(d) <= {"bed_gain"}
+                self.cfg.update(d)
+                if not quiet:
+                    self.log(f"settings {self.cfg}")
                 continue
             data = np.frombuffer(read(frames * max(1, ch) * 4), dtype=np.float32)
             if kind == 1:
                 self.add_call(data, sr)
             elif kind == 2:
                 self.add_crowd(data.reshape(-1, 2))
+            elif kind == 4:                                # the crowd bed (2026-10-30, #604)
+                self.set_bed(data.reshape(-1, 2))
+                self.log(f"crowd bed received ({len(data) // 2 / RATE:.0f} s)")
+
+
+def _setting(key, default):
+    """One value from the engineer's settings file (this player runs before the engineer sends anything)."""
+    try:
+        from .settings import PATH
+        with open(PATH, encoding="utf-8-sig") as f:
+            return json.load(f).get(key, default)
+    except Exception:
+        return default
 
 
 def _main():

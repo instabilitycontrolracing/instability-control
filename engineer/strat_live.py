@@ -31,6 +31,10 @@ class Strategist:
         self.raining, self.wet_lvl, self._lvl_since, self._lvl_cand = False, None, 0.0, None
         self.tyre_call, self._call_lap, self._tip_lap = None, -9, -9
         self.mine_wet = None
+        from .rain_brain import RainBrain          # #591: drying / wetter, the slicks-vs-wets crossover, its calls
+        self.rb = RainBrain(say_clip=self._rb_clip, show=self._rb_show, quiet=self._rb_quiet, log=self.log)
+        self._rb_cls = (-1e9, [], 1)               # (when, my class's car indices, my wet compound) - refreshed
+        self._rb_fc = None                          # (when read, this week's rain chance)
         self.cond = None
         self.rundown, self._rd_next, self._grid_since, self._rd_st = [], 0.0, None, 0
         self.db_at, self.db_done = None, False   # post-race debrief
@@ -95,6 +99,10 @@ class Strategist:
                 self.rival_stop[i] = lcs[i]
             self.rival_onp[i] = o
         self._rain_tick()
+        try:
+            self._rb_tick()
+        except Exception as e:
+            self.log(f"[rain] brain: {e!r}")
         self._formation(b)
         self._debrief(b)
         if "practice" in (b.sess_type or "").lower():
@@ -153,6 +161,10 @@ class Strategist:
             self._rain_lap(lc)
         except Exception as e:
             self.log(f"[rain] {e!r}")
+        try:                                        # #591: the switch-point calls - not once "box for slicks / wets" is out
+            self.rb.lap(self.rain_ctx(), box_called=self.tyre_call is not None)
+        except Exception as e:
+            self.log(f"[rain] brain lap: {e!r}")
         if b.is_race():
             self.replan(lc)
         elif len(self.recent) == 3 and not self.briefed and self.rp.rc is None:     # (the run plan replaces this)
@@ -773,6 +785,8 @@ class Strategist:
         lvl = self.wet_lvl or int(round(self.g("TrackWetness", 0) or 0))
         if lvl < 2 and self.tyre_call is None:
             return
+        if self._rb_quiet():                        # #591: no tyre calls while towed or after the flag (ic155 / ic156)
+            return
         m = self.model()
         if not m or not m.get("base"):
             return
@@ -783,7 +797,17 @@ class Strategist:
         ltg = self.b.laps_to_go() or 10
         ns = self.next_stop()
         stop_cost = m["tyre_time"] if (ns and abs(ns["lap"] - lc) <= 1) else m["lane_loss"] + m["tyre_time"]
-        change, g, total = R.crossover(m["base"], lvl, ltg, stop_cost, self.mine_wet, on_wets)
+        # #591: when the other cars' / your own lap times on each compound measure the gap, that beats the table
+        gain, worth = None, None
+        try:
+            _, x = self.rb.estimate(self.rain_ctx())
+            if x["source"] in ("field", "fit", "own") and x["conf"] in ("medium", "high") and x["gain"] is not None:
+                gain, worth = x["gain"], x["worth"]
+        except Exception as e:
+            self.log(f"[rain] estimate: {e!r}")
+        change, g, total = R.crossover(m["base"], lvl, ltg, stop_cost, self.mine_wet, on_wets, gain=gain)
+        if worth is not None and gain is not None:
+            change = bool(worth and gain > 0)       # measured: the gain follows the trend lap by lap (same as the answer)
         declared = self.g("WeatherDeclaredWet")
         if change and lc - self._call_lap >= 2:
             self._call_lap = lc
@@ -801,6 +825,101 @@ class Strategist:
         if lvl >= 3 and lc - self._tip_lap >= 2 and self._call_lap != lc:
             self._tip_lap = lc
             self.speak("ENGINEER", R.tips(1, seed=lc, track_key=self.track)[0])
+
+    # ------------------------------------------------------------ rain brain (#591)
+    def _rb_clip(self, sid, fills=None, answer=False):
+        """Play an engineer clip if his library has it (a pending rain line isn't there until it's rendered)."""
+        b = self.b
+        if b is None or not hasattr(b, "say"):
+            return False
+        from .voice import PRIO_URGENT, PRIO_INFO
+        try:
+            return bool(b.say(sid, fills or {}, prio=PRIO_URGENT if answer else PRIO_INFO))
+        except Exception as e:
+            self.log(f"[rain] clip {sid}: {e!r}")
+            return False
+
+    def _rb_show(self, role, text):
+        """A rain answer / call with no clip yet: shown on the radio card, the overlay caption and the iPad."""
+        show = getattr(self, "show", None)
+        (show or (lambda r, t: self.log(f"{r}: {t}")))(role, text)
+
+    def _rb_quiet(self):
+        """No proactive rain calls: being towed (ic155), after the flag (ic156), not driving, or watching a replay."""
+        from . import voice as _v
+        b = self.b
+        if b is None or _v.TOWING:
+            return True
+        if getattr(b, "finished", False):
+            return True
+        return not self.g("IsOnTrack", False) or bool(self.g("IsReplayPlaying", False))
+
+    def _rb_tick(self):
+        b = self.b
+        t = self.g("SessionTime")
+        if t is None:
+            return
+        when, cls, wi = self._rb_cls
+        if abs(t - when) > 30:                       # my class and wet compound: every 30 s is plenty
+            try:
+                cls = b.class_cars(b.my_class()[0])
+            except Exception:
+                cls = []
+            wi = self.wet_index()
+            self._rb_cls = (t, cls, wi)
+        self.rb.tick(self.g, b.me(), cls, wi, t=t)
+
+    def rain_ctx(self):
+        """What the rain brain needs from the strategist: tyres on, pace, laps left, the stop plan, the forecast."""
+        b = self.b
+        m = self.model() or {}
+        comp = self.g("PlayerTireCompound", None)
+        on_wets = comp is not None and int(comp) == self.wet_index()
+        lc = self.g("LapCompleted", 0) or self.last_lc or 0
+        ns = self.next_stop()
+        stint = int(ns["lap"] - lc) if ns and ns.get("lap") and ns["lap"] > lc else None
+        lap_s = sorted(self.recent)[len(self.recent) // 2] if self.recent else None
+        if not lap_s:
+            t = self.g("LapLastLapTime", -1) or -1
+            lap_s = t if t > 0 else None
+        best = {}
+        try:
+            arr = self.g("CarIdxBestLapTime") or []
+            for i in self._rb_cls[1]:
+                if i < len(arr) and arr[i] and arr[i] > 0:
+                    best[i] = float(arr[i])
+        except Exception:
+            pass
+        now = time.time()
+        fc = getattr(self, "_rb_fc", None)
+        if fc is None or now - fc[0] > 600:          # this week's rain chance: read once in ten minutes, not every lap
+            pct = None
+            try:
+                pct = (self._forecast() or {}).get("rain")
+            except Exception:
+                pass
+            fc = self._rb_fc = (now, pct)
+        fc_pct = fc[1]
+        from .rain_brain import forecast_from_info
+        stop_cost = (m["lane_loss"] + max(m.get("tyre_time") or 0, 4.0)) if m.get("lane_loss") else None
+        return {"on_wets": on_wets, "base": m.get("base"), "lap_s": lap_s, "laps_left": b.laps_to_go() if b else None,
+                "stint_laps": stint, "stop_cost": stop_cost, "stop_soon": bool(stint is not None and stint <= 1),
+                "mine": self.mine_wet, "t": self.g("SessionTime"), "best": best, "forecast_pct": fc_pct,
+                "forecast": forecast_from_info(b.info("WeekendInfo", {}) if b else {})}
+
+    def rain_answer(self, kind, concepts=()):
+        """A radio rain question -> the answer the rain brain gives, or {"route": "tyres"} ("should we change tyres?"
+        on a dry track is a tyre-wear question), or None (nothing to say: the old path answers)."""
+        if self.b is None:
+            return None
+        ctx = self.rain_ctx()
+        st = self.rb.trend.state()
+        dry = (st.get("level") or int(round(self.g("TrackWetness", 0) or 0)) or 1) <= 1 and not st.get("raining") \
+            and not self.g("WeatherDeclaredWet", False)
+        named = bool(set(concepts or ()) & {"DRYCOMP", "WETCOMP", "RAIN", "RAINW", "CROSS"})
+        if kind == "switch" and dry and not ctx["on_wets"] and not named:
+            return {"route": "tyres"}
+        return self.rb.answer(kind, ctx)
 
     def next_stop(self):
         """The recommended plan's next stop (for the pit plan)."""

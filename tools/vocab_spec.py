@@ -471,3 +471,14 @@ if _os.path.exists(_os.path.join(_here, "v62b_approved.txt")):
     _m = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_m)
     for _sid, _lang, _text in _m.NAME_FREE:
         add(_sid, _lang, _text)
+
+# ---- #591 rain brain (2026-10-30): new engineer lines PENDING the owner's approval (engineer/rain_brain.py PENDING).
+# Nothing is rendered until tools/rain_approved.txt exists. That file lists the approved clip ids, one a line
+# ("all" = every one). Until a line is rendered the app shows its answer as text - the stand-in voice never says them.
+if _os.path.exists(_os.path.join(_here, "rain_approved.txt")):
+    _ok = {_l.strip() for _l in open(_os.path.join(_here, "rain_approved.txt"), encoding="utf-8-sig") if _l.strip() and not _l.startswith("#")}
+    _spec = _ilu.spec_from_file_location("rain_brain_lines", _os.path.join(_here, "..", "engineer", "rain_brain_lines.py"))
+    _m = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_m)
+    for _sid, _text in _m.PENDING:
+        if "all" in _ok or _sid in _ok:
+            add(_sid, E, _text)

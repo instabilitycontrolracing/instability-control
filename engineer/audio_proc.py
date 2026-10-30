@@ -140,6 +140,63 @@ class ProcOut:
             pass
 
 
+# =============================================================================== Windows: keep the sound on time
+# 2026-10-30 (#604, research): on Windows 11 a program with no window counts as "background" - Windows may run it on the
+# slow cores at reduced speed (power throttling / EcoQoS) and ignores its timer requests. The sound programs opt out,
+# run at high priority, and register their sound thread with the Multimedia Class Scheduler as "Pro Audio" (the same
+# thing DAWs and Voicemeeter do), so iRacing in VR + OBS + the encode can't keep them waiting. Each step is optional:
+# whatever Windows refuses is simply skipped.
+def boost_process():
+    """High priority, no power throttling, 1 ms timer. Returns what was done (for the log)."""
+    if os.name != "nt":
+        return "not Windows"
+    done = []
+    try:
+        import ctypes
+        from ctypes import wintypes
+        k = ctypes.windll.kernel32
+        h = k.GetCurrentProcess()
+        if k.SetPriorityClass(h, HIGH_PRIORITY):
+            done.append("high priority")
+
+        class PPTS(ctypes.Structure):
+            _fields_ = [("Version", wintypes.ULONG), ("ControlMask", wintypes.ULONG), ("StateMask", wintypes.ULONG)]
+        st = PPTS(1, 0x1 | 0x4, 0)            # EXECUTION_SPEED | IGNORE_TIMER_RESOLUTION, state 0 = never throttle
+        if k.SetProcessInformation(h, 4, ctypes.byref(st), ctypes.sizeof(st)):    # ProcessPowerThrottling
+            done.append("no power throttling")
+        if ctypes.windll.winmm.timeBeginPeriod(1) == 0:
+            done.append("1 ms timer")
+    except Exception as e:
+        done.append(f"({e!r})")
+    return ", ".join(done) or "nothing"
+
+
+class ThreadBoost:
+    """Registers the thread it is first called on (the sound card's callback thread) as MMCSS "Pro Audio", once.
+    (2026-10-30: the earlier call sat on the program's main thread, which only sleeps - the callback never got it.)"""
+
+    def __init__(self):
+        self.tid, self.handle = None, None
+
+    def once(self):
+        tid = threading.get_ident()
+        if tid == self.tid:
+            return
+        self.tid = tid
+        if os.name != "nt":
+            return
+        try:
+            import ctypes
+            av = ctypes.windll.avrt
+            av.AvSetMmThreadCharacteristicsW.restype = ctypes.c_void_p
+            idx = ctypes.c_ulong(0)
+            self.handle = av.AvSetMmThreadCharacteristicsW("Pro Audio", ctypes.byref(idx))
+            if self.handle:
+                av.AvSetMmThreadPriority(ctypes.c_void_p(self.handle), 1)          # AVRT_PRIORITY_HIGH
+        except Exception:
+            pass
+
+
 # =============================================================================== the player program
 class Player:
     """Runs in the player program. Also used directly by the tests (render without a device)."""
@@ -156,6 +213,16 @@ class Player:
         self.cut_seen = int(ctrl[CUT])
         self.dry = False                   # behind: the bed plays until the engineer is REFILL_S ahead again
         self._f = None
+        self._mk(4096)
+
+    def _mk(self, n):
+        """Work buffers made once (2026-10-30: the callback allocated a few arrays per block before)."""
+        self._nmax = n
+        # ramps are full width (frames x channels): a (frames x 1) ramp broadcast over the channels made numpy
+        # allocate a scratch buffer on every multiply
+        self._ar = np.repeat(np.arange(n, dtype=np.float32)[:, None], self.ch, axis=1)
+        self._r = [np.empty((n, self.ch), np.float32) for _ in range(3)]
+        self._seg = np.empty((n, self.ch), np.float32)
 
     def reload_loop(self):
         gen = int(self.ctrl[LOOP_GEN])
@@ -173,13 +240,19 @@ class Player:
         except Exception:
             pass
 
-    def _ramp(self, g0, g1, n):
+    def _ramp(self, g0, g1, n, slot=0):
+        """g0 -> g1 over n frames (end excluded), in a buffer made once."""
         if g0 == g1:
-            return g0
-        return np.linspace(g0, g1, n, endpoint=False, dtype=np.float32)[:, None]
+            return float(g0)       # a plain float: a numpy float64 here made numpy work in float64 (a temporary copy)
+        r = self._r[slot][:n]
+        np.multiply(self._ar[:n], np.float32((g1 - g0) / n), out=r)
+        r += np.float32(g0)
+        return r
 
     def render(self, out):
         n = len(out)
+        if n > self._nmax:
+            self._mk(n)
         if self._f is None or len(self._f) < n:
             self._f = np.zeros((n, self.ch), np.float32)
         f = self._f[:n]
@@ -194,13 +267,14 @@ class Player:
             f[:k] = self.ring[p:p + k]
             if avail > k:
                 f[k:avail] = self.ring[:avail - k]
-            f *= np.linspace(1.0, 0.0, n, dtype=np.float32)[:, None]
-            out[:] = f * self.g_out
+            f *= self._ramp(1.0, 0.0, n)
+            np.multiply(f, self.g_out, out=out)
             c[R] = w
             return
         avail = w - r
         static = c[MODE] == 1
-        has_loop = self.loop is not None
+        loop = self.loop                                       # one look: reload_loop may swap it meanwhile
+        has_loop = loop is not None
         if self.dry and (static or not has_loop or avail >= int(self.rate * self.REFILL_S)):
             self.dry = False                                   # caught up: the live sound blends back in
         take = 0 if (self.dry and not static) else min(n, max(0, avail))
@@ -239,17 +313,20 @@ class Player:
             f *= self._ramp(g0f, g1f, n)
         if has_loop:
             lg = c[LOOP_GAIN] / SCALE
+            L = len(loop)
+            if self.lpos >= L:
+                self.lpos = 0
             if g0b > 0 or g1b > 0:
-                L = len(self.loop); pos = self.lpos; i = 0
-                seg = np.empty((n, self.ch), np.float32)
+                pos = self.lpos; i = 0
+                seg = self._seg[:n]
                 while i < n:
                     kk = min(n - i, L - pos)
-                    seg[i:i + kk] = self.loop[pos:pos + kk]
+                    seg[i:i + kk] = loop[pos:pos + kk]
                     i += kk; pos = (pos + kk) % L
-                seg *= self._ramp(g0b * lg, g1b * lg, n)
+                seg *= self._ramp(g0b * lg, g1b * lg, n, 1)
                 f += seg
-            self.lpos = (self.lpos + n) % len(self.loop)       # the bed keeps time even when silent: seamless returns
-        np.multiply(f, self._ramp(go0, go1, n), out=out)
+            self.lpos = (self.lpos + n) % L                    # the bed keeps time even when silent: seamless returns
+        np.multiply(f, self._ramp(go0, go1, n, 2), out=out)
         np.clip(out, -1.0, 1.0, out=out)
 
 
@@ -283,15 +360,10 @@ def main(argv):
     try:
         import gc
         gc.disable()                                       # nothing here makes garbage worth a pause
-        if os.name == "nt":
-            import ctypes
-            ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), HIGH_PRIORITY)
-            try:
-                ctypes.windll.avrt.AvSetMmThreadCharacteristicsW("Pro Audio", ctypes.byref(ctypes.c_ulong(0)))
-            except Exception:
-                pass
+        boost_process()                                    # high priority, no power throttling, 1 ms timer
     except Exception:
         pass
+    mm = ThreadBoost()
     try:
         import sounddevice as sd
         dev = None
@@ -299,6 +371,7 @@ def main(argv):
             dev = int(device) if device.lstrip("-").isdigit() else device
 
         def cb(outdata, n, t, status):
+            mm.once()                                      # this thread: MMCSS "Pro Audio"
             if status and status.output_underflow:
                 ctrl[UNDERFLOW] += 1
             try:

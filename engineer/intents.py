@@ -168,7 +168,28 @@ CONCEPTS = {
     "INCIDENT": ["incident", "incidents", "x", "penalty points", "safety rating", "how many x"],
     "AGAIN": ["say again", "repeat", "repeat that", "come again", "what was that", "did not catch", "didn t catch",
               "didn t get that", "missed that", "pardon", "one more time"],
+    # rain brain (#591, 2026-10-30): will it rain any more, is it drying, when do we go to slicks / wets
+    "RAINW": ["rain", "raining", "rains", "rainy", "drizzle", "shower", "showers", "spitting", "storm", "precipitation",
+              "downpour", "pouring"],
+    "DRYCOMP": ["slicks", "slick", "dries", "drys", "dry tyres", "dry ones", "dry rubber", "dry set", "slick tyres"],
+    "WETCOMP": ["wets", "wet tyres", "wet ones", "rain tyres", "wet set", "inters", "intermediates"],
+    "SWITCH": ["switch", "switching", "change", "changing", "swap", "swapping", "go to", "go onto", "go on to", "move to",
+               "put on", "time for", "back to", "go back to", "bolt on", "change over", "changeover", "crossover",
+               "cross over", "go for", "going to", "pit for", "box for", "ready for"],
+    "CHANGE_T": ["switch", "switching", "change", "changing", "swap", "swapping", "change over", "changeover",
+                 "crossover", "cross over", "time for"],
+    "DRYING": ["drying", "dry out", "drying out", "dries out", "drying up", "dry up", "dry line", "dried", "drier",
+               "dryer", "getting dry", "getting drier", "dry yet", "dry enough"],
+    "CROSS": ["crossover", "cross over", "changeover", "change over", "switch point", "switch over"],
+    "WETTER": ["wetter", "getting wet", "more wet", "wet again"],
+    "HEAVIER": ["heavier", "harder", "worse", "picking up", "intensifying", "getting heavy", "coming down", "building",
+                "lighter", "easing", "ease off", "ease up", "eases", "letting up", "let up", "dying down", "tailing off"],
+    "MORE": ["any more", "anymore", "more rain", "rain again", "again", "keep raining", "keep on raining",
+             "stop raining", "going to stop", "gonna stop", "rain stop", "stopping", "finish raining", "done raining",
+             "still raining", "rain more", "carry on", "over soon", "last long", "more coming", "rain later"],
 }
+# the rain brain's words are not added to the recogniser spell-fix list ("better" must never become "wetter")
+NO_SPELLFIX = {"RAINW", "DRYCOMP", "WETCOMP", "SWITCH", "CHANGE_T", "CROSS", "DRYING", "WETTER", "HEAVIER", "MORE"}
 CALLING = {"hey", "ok", "okay", "yo", "the", "my", "can", "could", "i", "talk", "to", "get", "me", "put", "on",
            "need", "want", "where", "is", "please", "go", "ahead", "copy", "quick", "question", "a", "you", "with",
            "speak", "come", "in", "are", "there", "radio", "check", "hello", "hi", "mate", "buddy", "um", "uh", "so",
@@ -214,10 +235,25 @@ RULES = [
     ("radio_check", 20, ("RADIO",), ()),
     ("incidents", 17, ("INCIDENT",), ()),
     ("say_again", 17, ("AGAIN",), ("LAPS",)),
+    # rain brain (#591): only as questions ("wets please" stays a pit request, "rain's getting heavier" a remark)
+    ("tyre_switch", 25, ("SWITCH", "DRYCOMP"), ("WETCOMP",), "question"),
+    ("tyre_switch", 24, ("WHEN", "DRYCOMP"), (), "question"),
+    ("tyre_switch", 23, ("DRYCOMP", "DRYING"), (), "question"),
+    ("tyre_switch", 24, ("CHANGE_T", "WETCOMP"), ("DRYCOMP",), "question"),
+    ("tyre_switch", 23, ("CHANGE_T", "TYRE"), ("WEAR", "DRYCOMP", "WETCOMP"), "question"),
+    ("tyre_switch", 23, ("CHANGE_T", "DRYCOMP", "WETCOMP"), (), "question"),
+    ("tyre_switch", 22, ("CROSS",), ("FUEL", "GAP"), "question"),
+    ("rain_trend", 24, ("DRYING",), ("DRYCOMP", "WETCOMP"), "question"),
+    ("rain_trend", 24, ("WETTER",), ("DRYCOMP", "WETCOMP"), "question"),
+    ("rain_trend", 24, ("RAINW", "HEAVIER"), ("DRYCOMP", "WETCOMP", "MORE"), "question"),
+    ("rain_trend", 20, ("TRACK", "HEAVIER"), ("DRYCOMP", "WETCOMP", "TYRE", "TEMP"), "question"),
+    ("rain_more", 24, ("RAINW", "MORE"), ("DRYCOMP", "WETCOMP", "TYRE", "AGAIN"), "question"),
+    ("rain_more", 24, ("RAINW", "MORE", "AGAIN"), ("DRYCOMP", "WETCOMP", "TYRE"), "question"),
 ]
 # the strategist's own subjects: when he talks to her and two meanings score the same, hers wins
 STRAT_INTENTS = {"fuel", "fuel_per_lap", "fuel_target", "next_stop", "strategy", "rain", "weather", "pit_out", "pit_loss",
-                 "tyres"}
+                 "tyres", "rain_more", "rain_trend", "tyre_switch"}
+RAIN_INTENTS = {"rain_more": "more", "rain_trend": "trend", "tyre_switch": "switch"}     # -> RainBrain.answer() kinds
 QUESTION_START = {"what", "whats", "how", "when", "where", "who", "which", "why", "do", "does", "did", "are", "is", "am",
                   "can", "could", "should", "will", "would", "have", "has", "any", "tell", "give", "gimme", "we", "update"}
 
@@ -228,7 +264,9 @@ def _compile():
         words = sorted(set(words), key=len, reverse=True)
         pats[c] = re.compile(r"(?<![a-z0-9])(" + "|".join(re.escape(w) for w in words) + r")(?![a-z0-9])")
     vocab = set()
-    for words in CONCEPTS.values():
+    for c, words in CONCEPTS.items():
+        if c in NO_SPELLFIX:
+            continue
         for w in words:
             vocab.update(x for x in w.split() if len(x) >= 4)
     for _, groups in INTENTS:
@@ -240,6 +278,8 @@ def _compile():
 
 _PATS, _VOCAB = _compile()
 _VOCAB_SET = set(_VOCAB)
+# ...but they are never "fixed" into something else either ("dries" is not "drive", "changing" is not "chasing")
+_KEEP = {x for c in NO_SPELLFIX for w in CONCEPTS[c] for x in w.split()}
 COMMON = set("""there their they these those think about would could should right thing things going doing looking
 again where which other first please thanks thank sorry really maybe still just mate buddy okay alright guys
 gonna wanna gotta getting being having little bit quite sure think know need want like tell give doing does
@@ -252,7 +292,7 @@ seconds sector sectors class classes driver drivers flags started stated slowly 
 
 def _fix_word(w):
     """A word the recogniser got nearly right ('tyers', 'positon', 'strategest') -> our word. Cached, ~50 us."""
-    if len(w) < 5 or w in _VOCAB_SET or w in COMMON or w.isdigit():
+    if len(w) < 5 or w in _VOCAB_SET or w in COMMON or w in _KEEP or w.isdigit():
         return w
     r = _FIX_CACHE.get(w)
     if r is None:

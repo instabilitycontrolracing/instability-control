@@ -135,10 +135,13 @@ def lap_on(base, level, wet_tyres, mine=None):
     return base * (1 + (WET_PEN if wet_tyres else SLICK_PEN)[level])
 
 
-def crossover(base, level, laps_left, stop_cost, mine=None, on_wets=False):
-    """Should you change tyres now? -> (change, seconds gained per lap, total gain)"""
+def crossover(base, level, laps_left, stop_cost, mine=None, on_wets=False, gain=None):
+    """Should you change tyres now? -> (change, seconds gained per lap, total gain)
+    gain: seconds a lap the other tyre is faster, MEASURED this session (rain_brain.py, #591) - used instead of the table."""
     slick, wet = lap_on(base, level, False), lap_on(base, level, True, mine)
     gain_lap = (slick - wet) if not on_wets else (wet - slick)
+    if gain is not None:
+        gain_lap = float(gain)
     total = gain_lap * laps_left - stop_cost
     return total > 0, gain_lap, total
 

@@ -66,6 +66,7 @@ class Settings:
     bcast_keyup: bool = True         # key-up click + squelch tail on the broadcast
     bcast_crowd: bool = True         # the crowd on the broadcast
     bcast_crowd_db: float = 0.0
+    bcast_wasapi: bool = False       # 2026-10-30 (#604): broadcast player opens the WASAPI entry of its output (test first)
     snd_tv_delay_ms: int = 0         # 2026-10-26 (#303): lip-sync - hold the TV sound back so it lines up with the picture
     snd_engine: int = 0              # car sound: engine body boost 0..100
     snd_detail: int = 0              # car sound: tyre / detail boost 0..100

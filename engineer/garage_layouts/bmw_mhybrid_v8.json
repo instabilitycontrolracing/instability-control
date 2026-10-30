@@ -1,0 +1,176 @@
+{
+  "car": "BMW M Hybrid V8",
+  "match": ["bmwlmdh"],
+  "source": "Transcribed 2026-10-30 from Angelo's 9 garage screenshots (BMW M Hybrid V8, Le Mans, VR, 2026-10-29). Tab, section and field order, names and units exactly as iRacing's garage shows them with Metric units OFF. yaml = the key iRacing writes in the session info CarSetup (checked against a real BMW GTP recording, gtp_lemans.ibt).",
+  "units": "imperial",
+  "adj_legend": {"arrows": "< > buttons (adjustable)", "list": "drop-down (adjustable)", "read": "read-only (iRacing works it out)"},
+  "tabs": [
+    {"name": "TIRES/AERO", "yaml": "TiresAero", "rows": [
+      [{"name": "TIRE TYPE", "yaml": "TireType", "fields": [
+        {"label": "Tire type", "yaml": "TireType", "adj": "list", "unit": "text"}]}],
+      [{"name": "LEFT FRONT", "yaml": "LeftFront", "fields": [
+        {"label": "Starting pressure", "yaml": "StartingPressure", "adj": "arrows", "unit": "psi", "dp": 1},
+        {"label": "Last hot pressure", "yaml": "LastHotPressure", "adj": "read", "unit": "psi", "dp": 1},
+        {"label": "Last temps O M I", "yaml": "LastTempsOMI", "adj": "read", "unit": "F3"},
+        {"label": "Tread remaining", "yaml": "TreadRemaining", "adj": "read", "unit": "pct3"}]},
+       {"name": "RIGHT FRONT", "yaml": "RightFront", "fields": [
+        {"label": "Starting pressure", "yaml": "StartingPressure", "adj": "arrows", "unit": "psi", "dp": 1},
+        {"label": "Last hot pressure", "yaml": "LastHotPressure", "adj": "read", "unit": "psi", "dp": 1},
+        {"label": "Last temps I M O", "yaml": "LastTempsIMO", "adj": "read", "unit": "F3"},
+        {"label": "Tread remaining", "yaml": "TreadRemaining", "adj": "read", "unit": "pct3"}]}],
+      [{"name": "LEFT REAR TIRE", "yaml": "LeftRearTire", "fields": [
+        {"label": "Starting pressure", "yaml": "StartingPressure", "adj": "arrows", "unit": "psi", "dp": 1},
+        {"label": "Last hot pressure", "yaml": "LastHotPressure", "adj": "read", "unit": "psi", "dp": 1},
+        {"label": "Last temps O M I", "yaml": "LastTempsOMI", "adj": "read", "unit": "F3"},
+        {"label": "Tread remaining", "yaml": "TreadRemaining", "adj": "read", "unit": "pct3"}]},
+       {"name": "RIGHT REAR TIRE", "yaml": "RightRearTire", "fields": [
+        {"label": "Starting pressure", "yaml": "StartingPressure", "adj": "arrows", "unit": "psi", "dp": 1},
+        {"label": "Last hot pressure", "yaml": "LastHotPressure", "adj": "read", "unit": "psi", "dp": 1},
+        {"label": "Last temps I M O", "yaml": "LastTempsIMO", "adj": "read", "unit": "F3"},
+        {"label": "Tread remaining", "yaml": "TreadRemaining", "adj": "read", "unit": "pct3"}]}],
+      [{"name": "AERO SETTINGS", "yaml": "AeroSettings", "fields": [
+        {"label": "Rear wing angle", "yaml": "RearWingAngle", "adj": "arrows", "unit": "deg", "dp": 0}]},
+       {"name": "AERO CALCULATOR", "yaml": "AeroCalculator", "fields": [
+        {"label": "Front RH at speed", "yaml": "FrontRhAtSpeed", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Rear RH at speed", "yaml": "RearRhAtSpeed", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Downforce balance", "yaml": "DownforceBalance", "adj": "read", "unit": "pct", "dp": 2},
+        {"label": "L/D", "yaml": "LD", "adj": "read", "unit": "num", "dp": 3}]}]
+    ]},
+    {"name": "CHASSIS", "yaml": "Chassis", "rows": [
+      [{"name": "FRONT", "yaml": "Front", "fields": [
+        {"label": "Heave spring", "yaml": "HeaveSpring", "adj": "arrows", "unit": "lbs/in", "dp": 0},
+        {"label": "Heave perch offset", "yaml": "HeavePerchOffset", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Heave spring defl", "yaml": "HeaveSpringDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Heave slider defl", "yaml": "HeaveSliderDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "ARB size", "yaml": "ArbSize", "adj": "list", "unit": "text"},
+        {"label": "ARB blades", "yaml": "ArbBlades", "adj": "arrows", "unit": "int", "step": 1},
+        {"label": "Toe-in", "yaml": "ToeIn", "adj": "arrows", "unit": "in32"},
+        {"label": "Pushrod length offset", "yaml": "PushrodLengthOffset", "adj": "arrows", "unit": "inch", "dp": 3}]}],
+      [{"name": "LEFT FRONT", "yaml": "LeftFront", "fields": [
+        {"label": "Corner weight", "yaml": "CornerWeight", "adj": "read", "unit": "lbs", "dp": 0},
+        {"label": "Ride height", "yaml": "RideHeight", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Shock defl", "yaml": "ShockDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Torsion bar defl", "yaml": "TorsionBarDefl", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Torsion bar turns", "yaml": "TorsionBarTurns", "adj": "arrows", "unit": "text"},
+        {"label": "Torsion bar O.D.", "yaml": "TorsionBarOD", "adj": "list", "unit": "text"},
+        {"label": "LS comp damping", "yaml": "LsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damping", "yaml": "HsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damp slope", "yaml": "HsCompDampSlope", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "LS rbd damping", "yaml": "LsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS rbd damping", "yaml": "HsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "Camber", "yaml": "Camber", "adj": "arrows", "unit": "deg", "dp": 1}]},
+       {"name": "RIGHT FRONT", "yaml": "RightFront", "fields": [
+        {"label": "Corner weight", "yaml": "CornerWeight", "adj": "read", "unit": "lbs", "dp": 0},
+        {"label": "Ride height", "yaml": "RideHeight", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Shock defl", "yaml": "ShockDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Torsion bar defl", "yaml": "TorsionBarDefl", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Torsion bar turns", "yaml": "TorsionBarTurns", "adj": "arrows", "unit": "text"},
+        {"label": "Torsion bar O.D.", "yaml": "TorsionBarOD", "adj": "list", "unit": "text"},
+        {"label": "LS comp damping", "yaml": "LsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damping", "yaml": "HsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damp slope", "yaml": "HsCompDampSlope", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "LS rbd damping", "yaml": "LsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS rbd damping", "yaml": "HsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "Camber", "yaml": "Camber", "adj": "arrows", "unit": "deg", "dp": 1}]}],
+      [{"name": "LEFT REAR", "yaml": "LeftRear", "fields": [
+        {"label": "Corner weight", "yaml": "CornerWeight", "adj": "read", "unit": "lbs", "dp": 0},
+        {"label": "Ride height", "yaml": "RideHeight", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Shock defl", "yaml": "ShockDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Spring defl", "yaml": "SpringDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Spring perch offset", "yaml": "SpringPerchOffset", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Spring rate", "yaml": "SpringRate", "adj": "arrows", "unit": "lbs/in", "dp": 0},
+        {"label": "LS comp damping", "yaml": "LsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damping", "yaml": "HsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damp slope", "yaml": "HsCompDampSlope", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "LS rbd damping", "yaml": "LsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS rbd damping", "yaml": "HsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "Camber", "yaml": "Camber", "adj": "arrows", "unit": "deg", "dp": 1},
+        {"label": "Toe-in", "yaml": "ToeIn", "adj": "arrows", "unit": "in32"}]},
+       {"name": "RIGHT REAR", "yaml": "RightRear", "fields": [
+        {"label": "Corner weight", "yaml": "CornerWeight", "adj": "read", "unit": "lbs", "dp": 0},
+        {"label": "Ride height", "yaml": "RideHeight", "adj": "read", "unit": "in", "dp": 3},
+        {"label": "Shock defl", "yaml": "ShockDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Spring defl", "yaml": "SpringDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Spring perch offset", "yaml": "SpringPerchOffset", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Spring rate", "yaml": "SpringRate", "adj": "arrows", "unit": "lbs/in", "dp": 0},
+        {"label": "LS comp damping", "yaml": "LsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damping", "yaml": "HsCompDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS comp damp slope", "yaml": "HsCompDampSlope", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "LS rbd damping", "yaml": "LsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "HS rbd damping", "yaml": "HsRbdDamping", "adj": "arrows", "unit": "clicks", "step": 1},
+        {"label": "Camber", "yaml": "Camber", "adj": "arrows", "unit": "deg", "dp": 1},
+        {"label": "Toe-in", "yaml": "ToeIn", "adj": "arrows", "unit": "in32"}]}],
+      [{"name": "REAR", "yaml": "Rear", "fields": [
+        {"label": "Third spring", "yaml": "ThirdSpring", "adj": "arrows", "unit": "lbs/in", "dp": 0},
+        {"label": "Third perch offset", "yaml": "ThirdPerchOffset", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Third spring defl", "yaml": "ThirdSpringDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "Third slider defl", "yaml": "ThirdSliderDefl", "adj": "read", "unit": "in_of", "dp": 3},
+        {"label": "ARB size", "yaml": "ArbSize", "adj": "list", "unit": "text"},
+        {"label": "ARB blades", "yaml": "ArbBlades", "adj": "arrows", "unit": "int", "step": 1},
+        {"label": "Pushrod length offset", "yaml": "PushrodLengthOffset", "adj": "arrows", "unit": "inch", "dp": 3},
+        {"label": "Cross weight", "yaml": "CrossWeight", "adj": "read", "unit": "pct", "dp": 1}]}]
+    ]},
+    {"name": "BRAKES/DRIVE UNIT", "yaml": "BrakesDriveUnit", "rows": [
+      [{"name": "LIGHTING", "yaml": "Lighting", "fields": [
+        {"label": "Roof ID light color", "yaml": "RoofIdLightColor", "adj": "list", "unit": "text"}]},
+       {"name": "BRAKE SPEC", "yaml": "BrakeSpec", "fields": [
+        {"label": "Pad compound", "yaml": "PadCompound", "adj": "list", "unit": "text"},
+        {"label": "Front master cyl.", "yaml": "FrontMasterCyl", "adj": "arrows", "unit": "in", "dp": 3},
+        {"label": "Rear master cyl.", "yaml": "RearMasterCyl", "adj": "arrows", "unit": "in", "dp": 3},
+        {"label": "Brake pressure bias", "yaml": "BrakePressureBias", "adj": "arrows", "unit": "pct", "dp": 2},
+        {"label": "Brake bias target", "yaml": "BrakeBiasTarget", "adj": "arrows", "unit": "int", "step": 1},
+        {"label": "Brake bias migration", "yaml": "BrakeBiasMigration", "adj": "arrows", "unit": "int", "step": 1}]}],
+      [{"name": "HYBRID CONFIG", "yaml": "HybridConfig", "fields": []}],
+      [{"name": "FUEL", "yaml": "Fuel", "fields": [
+        {"label": "Fuel level", "yaml": "FuelLevel", "adj": "arrows", "unit": "gal", "dp": 1},
+        {"label": "Fuel low warning", "yaml": "FuelLowWarning", "adj": "arrows", "unit": "gal", "dp": 1}]}],
+      [{"name": "TRACTION CONTROL", "yaml": "TractionControl", "fields": [
+        {"label": "Traction control gain", "yaml": "TractionControlGain", "adj": "arrows", "unit": "int", "step": 1},
+        {"label": "Traction control slip", "yaml": "TractionControlSlip", "adj": "arrows", "unit": "int", "step": 1}]}],
+      [{"name": "GEAR RATIOS", "yaml": "GearRatios", "fields": [
+        {"label": "Gear stack", "yaml": "GearStack", "adj": "list", "unit": "text"},
+        {"label": "Speed in first", "yaml": "SpeedInFirst", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in second", "yaml": "SpeedInSecond", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in third", "yaml": "SpeedInThird", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in fourth", "yaml": "SpeedInFourth", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in fifth", "yaml": "SpeedInFifth", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in sixth", "yaml": "SpeedInSixth", "adj": "read", "unit": "mph", "dp": 1},
+        {"label": "Speed in seventh", "yaml": "SpeedInSeventh", "adj": "read", "unit": "mph", "dp": 1}]}],
+      [{"name": "REAR DIFF SPEC", "yaml": "RearDiffSpec", "fields": [
+        {"label": "Coast/drive ramp angles", "yaml": "CoastDriveRampAngles", "adj": "list", "unit": "text"},
+        {"label": "Clutch friction plates", "yaml": "ClutchFrictionPlates", "adj": "arrows", "unit": "int", "step": 1},
+        {"label": "Preload", "yaml": "Preload", "adj": "arrows", "unit": "ft-lbs", "dp": 0}]}]
+    ]},
+    {"name": "NOTES", "yaml": null, "rows": []}
+  ],
+  "keys": {
+    "bias": ["BrakesDriveUnit.BrakeSpec.BrakePressureBias"],
+    "mig": ["BrakesDriveUnit.BrakeSpec.BrakeBiasMigration"],
+    "farb": ["Chassis.Front.ArbBlades"],
+    "rarb": ["Chassis.Rear.ArbBlades"],
+    "tc1": ["BrakesDriveUnit.TractionControl.TractionControlGain"],
+    "tc2": ["BrakesDriveUnit.TractionControl.TractionControlSlip"],
+    "wing": ["TiresAero.AeroSettings.RearWingAngle"],
+    "preload": ["BrakesDriveUnit.RearDiffSpec.Preload"],
+    "ramps": ["BrakesDriveUnit.RearDiffSpec.CoastDriveRampAngles"],
+    "plates": ["BrakesDriveUnit.RearDiffSpec.ClutchFrictionPlates"],
+    "rh_f": ["Chassis.Front.PushrodLengthOffset"],
+    "rh_r": ["Chassis.Rear.PushrodLengthOffset"],
+    "heave": ["Chassis.Front.HeaveSpring"],
+    "third": ["Chassis.Rear.ThirdSpring"],
+    "press": ["TiresAero.LeftFront.StartingPressure", "TiresAero.RightFront.StartingPressure", "TiresAero.LeftRearTire.StartingPressure", "TiresAero.RightRearTire.StartingPressure"],
+    "camber_f": ["Chassis.LeftFront.Camber", "Chassis.RightFront.Camber"],
+    "camber_r": ["Chassis.LeftRear.Camber", "Chassis.RightRear.Camber"]
+  },
+  "key_notes": {
+    "farb": "Also on the dash in the car (FARB).",
+    "rarb": "Also on the dash in the car (RARB).",
+    "tc1": "Also on the dash in the car (TC1).",
+    "tc2": "Also on the dash in the car (TC2).",
+    "bias": "Also on the dash in the car (BB).",
+    "mig": "Also on the dash in the car.",
+    "rh_f": "The ride height itself is read-only: it moves with the pushrod.",
+    "rh_r": "The ride height itself is read-only: it moves with the pushrod."
+  },
+  "fixed_key_rule_note": "The 'keys' map turns the setup rulebook's keys (setup_bank.K) into the garage fields above. Rulebook steps without a key are matched by their words (setup_sheet.TEXT_RULES)."
+}

@@ -129,6 +129,8 @@ async function suStyle() {
   if (d.changes.length) h += `<div class="su-card fix"><div class="lbl">Your setup, in this order</div>${d.changes.map((c, i) => `<div class="su-chg"><span class="n">${i + 1}</span><span class="t">${suEsc(c.t)}</span>${c.now ? `<span class="now">now ${suEsc(c.now)}</span>` : ""}
       ${c.where ? `<div class="whr">${suEsc(c.where)}</div>` : ""}<span class="why">${suEsc(c.why)} ${suEsc(c.rule)}</span>${c.style ? `<span class="sty">Your style: ${suEsc(c.style)}</span>` : ""}</div>`).join("")}</div>`;
   h += `<div class="su-card"><div class="lbl">Mechanic</div>${d.notes.map((n) => `<p>${suEsc(n)}</p>`).join("")}</div>`;
+  // #602: the sheet is pushed to the iPad's SETUP page as soon as it's built
+  if (d.changes.length) h += `<div class="su-card"><p><b>On your iPad now:</b> SETUP shows these changes laid out like the iRacing garage, with your current values.</p></div>`;
   // #514: iRacing's setup files can't be written, so the engineer walks you through it in the garage instead
   if (d.changes.length) h += `<div class="su-card"><button class="btn sm gold" id="suGuide">Guide me in the garage</button>
       <p id="suGuideMsg" style="margin-top:8px">Opens a checklist on the iPad (and here): each change ticks itself off when iRacing shows it.</p><div id="suGuideList"></div></div>`;

@@ -215,6 +215,8 @@ class Api:
                 self._bcast = Link(self._s, log=self._log, on_change=lambda: self._audio_mix().write_stream())
                 _V.TAPS.append(self._bcast.clip)
                 _C.TAPS.append(self._bcast.crowd)
+                if getattr(self, "_crowd", None) is not None:   # #604: the bed covers a late crowd on the broadcast too
+                    self._bcast.watch(self._crowd.mixer)
                 import atexit
                 atexit.register(self._bcast.stop)
             except Exception as e:
@@ -370,6 +372,10 @@ class Api:
         pit = getattr(self, "_pit", None)
         if pit and pit.wants(text) and pit.answer(text):
             return
+        # #591: the rain brain's questions (will it rain any more / drying or wetter / when do we switch tyres) go before
+        # the older weather questions, which only know this week's forecast
+        if Api._rain_q(self, heard, st):           # (called on the class: the radio test doubles stay valid)
+            return
         if eng.brain is not None and getattr(eng.brain, "ask", None):          # Batch E questions (2026-10-24)
             eng.brain.strat = st
             try:
@@ -467,6 +473,43 @@ class Api:
         if team and team.state == "ready":
             self._q.put({"t": "goto", "tab": "team"}); self._q.put({"t": "team_heard", "text": text}); return
         eng.voice.say("ans_didnt_catch", prio=PRIO_URGENT)
+
+    def _rain_q(self, heard, st):
+        """#591: "will it rain any more?", "is it drying?", "when do we go to slicks?" -> the rain brain answers (its own
+        clip once rendered, an existing clip that fits, or the answer as text). True if it answered. Without a session
+        the question falls back to the old rain answer (track wetness + tips)."""
+        from .intents import RAIN_INTENTS
+        kind = RAIN_INTENTS.get(heard["intent"])
+        cs = set(heard.get("concepts") or ())
+        rb = getattr(st, "rb", None) if st is not None else None
+        if kind is None and heard["intent"] == "rain" and heard["question"] and rb is not None \
+                and cs & {"DRYCOMP", "WETCOMP"}:
+            # "do we need wets?" / "slicks yet?" on a wet track: the crossover answers it (a dry track keeps the old answer)
+            try:
+                ts = rb.trend.state()
+                if (ts.get("level") or 0) >= 2 or ts.get("raining"):
+                    kind = "switch"
+            except Exception:
+                pass
+        if kind is None:
+            return False
+        if rb is None or getattr(st, "b", None) is None:
+            heard["intent"] = "rain"                 # no session yet: the old rain answer
+            return False
+        try:
+            a = st.rain_answer(kind, cs)
+        except Exception as e:
+            self._log(f"[rain] answer: {e!r}")
+            a = None
+        if not a:
+            heard["intent"] = "rain"
+            return False
+        if a.get("route"):                           # "should we change tyres?" on a dry track = tyre wear
+            heard["intent"] = a["route"]
+            return False
+        how = rb.deliver(a, "ENGINEER", answer=True)
+        self._log(f"[radio] rain {kind}: {a['sid']} ({how})")
+        return True
 
     def _gap_both_ways(self, heard):
         """'What's the gap?' (no ahead / behind said) while he's fighting a car in front AND a car behind."""
@@ -2133,6 +2176,7 @@ class Api:
                 pack = BR.prerace_pack(w["car"], w["track"], w.get("car_name"), w.get("track_name"), w.get("cls"), race_s, label,
                                        tank, fuel_now, temp, metric, recs, ms, race_laps=race_laps)
                 self._fx_into_prerace(pack, w["car"], w["track"])  # forensics (2026-10-27): where it went wrong last time
+                self._prerace_setup(pack, w["car"])               # #580: the suggestion on the iPad, in words
         except Exception as e:
             self._log(f"[memory] meeting: {e!r}")
             return {"error": repr(e)}
@@ -2222,6 +2266,7 @@ class Api:
         except Exception as e:
             self._log(f"[forensics] review: {e!r}")
             return {"error": repr(e)}
+        self._meeting_setup(rv["sections"], res, paths)     # #580: the setup in words + pushed to the iPad
         self._fx = rv
         self._meet, self._team_hist = {"kind": "review", "review": rv, "title": rv["title"]}, []
         t = self._team_obj(); t.start()
@@ -2325,12 +2370,50 @@ class Api:
                              + " ".join(e["why"][:2]) + f" What to do: {e['what']}")
             if lines:
                 pack["sections"].insert(min(3, len(pack["sections"])), {"h": "Incidents explained", "lines": lines})
+            self._meeting_setup(pack["sections"], res, [x["path"]])   # #580
             pack["fx"] = {"sid": x["id"], "episodes": [{k: v for k, v in e.items() if k != "trace"} for e in x["episodes"]]}
             cur = getattr(self, "_fx", None)
             if not cur or DB.find_episode(cur, x["id"], (x["episodes"] or [{"n": 1}])[0]["n"])[0] is None:
                 self._fx = DB.night_review(res)              # so the incident traces open from the debrief too
         except Exception as e:
             self._log(f"[forensics] debrief: {e!r}")
+
+    def _meeting_setup(self, sections, res, paths):
+        """#580: the team meeting gives the setup summary in words and says it is on the iPad. Text only - the
+        spoken wording waits for Angelo's approval (docs/proposals/setup-ipad-lines-for-approval.md)."""
+        from . import setup_sheet as SS
+        try:
+            changes = SS.from_meeting((res or {}).get("setup"))
+            if not changes or not paths:
+                return None
+            newest = max(paths, key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0)
+            cs, info = SS.ibt_setup(newest)
+            wk = info.get("WeekendInfo") or {}
+            di = info.get("DriverInfo") or {}
+            me = next((d for d in di.get("Drivers") or [] if d.get("CarIdx") == di.get("DriverCarIdx")), {})
+            src = {"carsetup": cs, "car_path": me.get("CarPath") or "", "track": wk.get("TrackDisplayName") or "",
+                   "session": SS.session_label(info), "date": str((wk.get("WeekendOptions") or {}).get("Date") or "")}
+            sug = self.setup_push(changes, src, me.get("CarScreenName") or "", "Team meeting")
+            lines = SS.meeting_lines(sug)
+            if lines:
+                at = next((i for i, s in enumerate(sections) if s.get("h") == "Car"), None)
+                sec = {"h": "Setup on your iPad", "lines": lines}
+                sections.insert(at + 1 if at is not None else min(3, len(sections)), sec)
+            return sug
+        except Exception as e:
+            self._log(f"[setup sheet] meeting: {e!r}")
+            return None
+
+    def _prerace_setup(self, pack, car):
+        try:
+            from . import setup_sheet as SS
+            sug, _ = self._sheet_store().get()
+            if sug and car and SS.norm(sug.get("car_path")) == SS.norm(car):
+                lines = SS.meeting_lines(sug)
+                if lines:
+                    pack["sections"].insert(min(3, len(pack["sections"])), {"h": "Setup on your iPad", "lines": lines})
+        except Exception as e:
+            self._log(f"[setup sheet] pre-race: {e!r}")
 
     def _fx_into_prerace(self, pack, car, track):
         try:
@@ -2390,6 +2473,11 @@ class Api:
             out = build(car_path, log=self._log)
             if out.get("ok"):
                 self._style_last = out                     # #514: the guided garage starts from this sheet
+                if out.get("changes"):
+                    self.setup_push(out["changes"], out.get("source") or {}, out.get("car") or "", "My style",
+                                    notes=out.get("notes"), sessions=out.get("sessions"))      # #602: on the iPad now
+            out = dict(out)
+            out["source"] = {k: v for k, v in (out.get("source") or {}).items() if k != "carsetup"}
             return out
         except Exception as e:
             self._log(f"[style setup] {e!r}")
@@ -2432,6 +2520,81 @@ class Api:
         self._guide_obj().stop()
         self._log("[setup guide] closed")
         return {"active": False}
+
+    # ---- #602 (2026-10-30): the iPad SETUP sheet - the latest suggestion laid out like iRacing's garage menu
+    def _sheet_store(self):
+        st = getattr(self, "_sheet", None)
+        if st is None:
+            from .setup_sheet import Store
+            st = self._sheet = Store()
+        return st
+
+    def setup_push(self, changes, src, car="", source="My style", notes=None, sessions=None):
+        """'Push to iPad': freeze the rule-based changes against his real setup and make them the iPad's suggestion."""
+        from . import setup_sheet as SS
+        try:
+            sug = SS.make_suggestion(changes, (src or {}).get("carsetup") or {}, (src or {}).get("car_path") or "", car,
+                                     (src or {}).get("track") or "", (src or {}).get("session") or "", source,
+                                     date=None, notes=notes, sessions=sessions)
+            if (src or {}).get("date"):
+                sug["event_date"] = src["date"]
+            st = self._sheet_store()
+            cur, _ = st.get()
+            if SS.same(cur, sug):
+                return cur                                  # the meeting opened again: same suggestion, keep its ticks
+            st.push(sug)
+            self._log(f"[setup sheet] pushed to the iPad: {len(sug['changes'])} change(s) for {car} ({source})")
+            try:
+                self._q.put({"t": "setup_pushed", "n": len(sug["changes"]), "source": source})
+            except Exception:
+                pass
+            return sug
+        except Exception as e:
+            self._log(f"[setup sheet] push: {e!r}")
+            return None
+
+    def _sheet_live(self):
+        """The live session's CarSetup, car and in-car brake bias (None outside a session) + whether he is on track."""
+        b = self._guide_brain()
+        if b is None:
+            return None, None, None, False
+        try:
+            cs = b.info("CarSetup", {}) or {}
+            d = b.drivers().get(b.me(), {}) or {}
+            bias = b.g("dcBrakeBias", None)
+            on = bool(b.g("IsOnTrack", False))
+            return cs, d.get("CarPath"), (float(bias) if bias else None), on
+        except Exception:
+            return None, None, None, False
+
+    def setup_sheet(self, sid=None):
+        from . import setup_sheet as SS
+        cs, car, bias, on = self._sheet_live()
+        try:
+            out = SS.view(self._sheet_store(), sid, cs, car, bias)
+        except Exception as e:
+            self._log(f"[setup sheet] {e!r}")
+            out = {"has": False, "error": "Couldn't read the setup sheet.", "history": []}
+        if not out.get("has") and cs:
+            out = dict(SS.sheet(None, cs, car), history=out.get("history") or [])   # no suggestion yet: his live setup
+        out["session_live"] = cs is not None
+        out["on_track"] = on
+        return out
+
+    def setup_sheet_tick(self, sid, i, on):
+        st = self._sheet_store()
+        sug, _ = st.get(sid)
+        if sug:
+            st.tick(sug["id"], int(i), bool(on))
+        return self.setup_sheet(sid)
+
+    def setup_sheet_build(self):
+        """The iPad's 'Build from my laps' button: run My style now (it pushes itself)."""
+        r = self.style_setup()
+        out = self.setup_sheet()
+        if not r.get("ok") or not r.get("changes"):
+            out["why"] = r.get("why") or "No weakness repeats in your laps: no setup change suggested."
+        return out
 
     def toggle_max(self):
         if not self._win:

@@ -1427,6 +1427,7 @@ def setup_advice(sessions, sess=None):
         if len(es) >= 3:
             out.append({"problem": p["label"], "times": len(es), "where": where, "repeat": True,
                         "first_fix": fixes[0]["t"] if fixes else None, "why": fixes[0]["why"] if fixes else "",
+                        "key": fixes[0].get("key") if fixes else None,           # #602: the garage field for the iPad sheet
                         "wet_note": p.get("wet") if wet else None,
                         "line": f"{p['label']}: {len(es)} times ({where}). Technique first; if it still happens with clean inputs, the mechanic's first change is: {fixes[0]['t'] if fixes else '-'}."})
         else:
