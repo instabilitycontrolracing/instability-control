@@ -1716,8 +1716,16 @@ class Crowd:
                 self._sim_open = any(e.startswith("iracingsim") or e == "iracingui.exe" for e in ex)
             except Exception:
                 self._sim_open = brain is not None
-        live = bool(brain is not None and f.running and not simload.BUSY
-                    and (getattr(f, "tv", False) or (f.on_track and not f.in_pits)))
+        # 2026-10-30 (Angelo: "we talked about making it a loop so it didn't chop before getting in the car"): sitting in
+        # the menus iRacing shows a TV camera, which counted as "watching" - the live crowd ran and chopped. Live crowd now
+        # only when you're driving (out on track, out of the pits) or a replay is actually playing; otherwise the loop.
+        replay = False
+        try:
+            replay = bool(brain.src["IsReplayPlaying"]) if brain is not None else False
+        except Exception:
+            replay = False
+        driving = bool(getattr(f, "driving", False)) or (f.on_track and not f.in_pits and not getattr(f, "tv", False))
+        live = bool(brain is not None and f.running and not simload.BUSY and (driving or replay))
         m = self.mixer
         m.static = not live
         off = not getattr(self.s, "crowd_on", True) or getattr(self.s, "crowd_mute", False)
