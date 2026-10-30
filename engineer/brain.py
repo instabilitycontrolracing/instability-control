@@ -736,6 +736,13 @@ class Brain:
     def pit(self):
         on = bool(self.g("OnPitRoad", False))
         was = self.prev.get("pit", on); self.prev["pit"] = on
+        # 2026-10-29 (Angelo: after the race, pitting shouldn't sound like a race stop - "context aware of that being the
+        # not in race pitting"): after the flag the pit lane gets the cool-down lines (post_pit_*, only once they're
+        # approved and recorded - until then nothing), never the limiter reminder / where-we-come-out calls.
+        if self.is_race() and self.finished:
+            if on and not was and self.g("IsOnTrack", False):
+                self.say("post_pit_in", prio=PRIO_INFO, cooldown=600)
+            return
         if on and not was and self.g("IsOnTrack", False):
             self.last_pit_time = self.clock()
             if not (int(self.g("EngineWarnings", 0) or 0) & 0x10):   # limiter already on: nothing to remind

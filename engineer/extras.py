@@ -329,7 +329,7 @@ class Extras:
             self.say("limiter_off", prio=PRIO_URGENT)
         if onp and not was:
             self.stall_said = False
-            if b.is_race() and b.green_seen:
+            if b.is_race() and b.green_seen and not b.finished:   # 2026-10-29: after the flag there's no "we come out P3"
                 b.later(1.5, lambda: self.predict_exit(say=True, entering=True))
         # pit stall coming up
         stall = (b.info("DriverInfo", {}) or {}).get("DriverPitTrkPct")
