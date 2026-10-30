@@ -1,0 +1,137 @@
+# CarSetup block copied unchanged from a real BMW M Hybrid V8 recording at Le Mans (gtp_lemans.ibt, 2026-10-18).
+# iRacing writes it in metric; the garage shows imperial.
+CarSetup:
+ UpdateCount: 3
+ TiresAero:
+  TireType:
+   TireType: Dry
+  LeftFront:
+   StartingPressure: 152 kPa
+   LastHotPressure: 152 kPa
+   LastTempsOMI: 35C, 35C, 35C
+   TreadRemaining: 100%, 100%, 100%
+  LeftRearTire:
+   StartingPressure: 152 kPa
+   LastHotPressure: 152 kPa
+   LastTempsOMI: 35C, 35C, 35C
+   TreadRemaining: 100%, 100%, 100%
+  RightFront:
+   StartingPressure: 152 kPa
+   LastHotPressure: 152 kPa
+   LastTempsIMO: 35C, 35C, 35C
+   TreadRemaining: 100%, 100%, 100%
+  RightRearTire:
+   StartingPressure: 152 kPa
+   LastHotPressure: 152 kPa
+   LastTempsIMO: 35C, 35C, 35C
+   TreadRemaining: 100%, 100%, 100%
+  AeroSettings:
+   RearWingAngle: 12 deg
+  AeroCalculator:
+   FrontRhAtSpeed: 15.0 mm
+   RearRhAtSpeed: 40.0 mm
+   DownforceBalance: 53.27%
+   LD: 3.817
+ Chassis:
+  Front:
+   HeaveSpring: 220 N/mm
+   HeavePerchOffset: -21.5 mm
+   HeaveSpringDefl: 6.7 mm 62.4 mm
+   HeaveSliderDefl: 32.8 mm 200.0 mm
+   ArbSize:  Soft
+   ArbBlades: 2
+   ToeIn: -1.4 mm
+   PushrodLengthOffset: -30.5 mm
+  LeftFront:
+   CornerWeight: 2695 N
+   RideHeight: 30.1 mm
+   ShockDefl: 11.8 mm 100.0 mm
+   TorsionBarDefl: 8.5 mm
+   TorsionBarTurns: 0.084 Turns
+   TorsionBarOD:  14.34 mm
+   LsCompDamping: 4 clicks
+   HsCompDamping: 5 clicks
+   HsCompDampSlope: 8 clicks
+   LsRbdDamping: 4 clicks
+   HsRbdDamping: 5 clicks
+   Camber: -2.9 deg
+  LeftRear:
+   CornerWeight: 3020 N
+   RideHeight: 48.1 mm
+   ShockDefl: 25.1 mm 150.0 mm
+   SpringDefl: 12.4 mm 86.5 mm
+   SpringPerchOffset: 40.5 mm
+   SpringRate: 120 N/mm
+   LsCompDamping: 3 clicks
+   HsCompDamping: 10 clicks
+   HsCompDampSlope: 5 clicks
+   LsRbdDamping: 4 clicks
+   HsRbdDamping: 11 clicks
+   Camber: -1.9 deg
+   ToeIn: +0.2 mm
+  RightFront:
+   CornerWeight: 2695 N
+   RideHeight: 30.1 mm
+   ShockDefl: 11.8 mm 100.0 mm
+   TorsionBarDefl: 8.5 mm
+   TorsionBarTurns: 0.084 Turns
+   TorsionBarOD:  14.34 mm
+   LsCompDamping: 4 clicks
+   HsCompDamping: 5 clicks
+   HsCompDampSlope: 8 clicks
+   LsRbdDamping: 4 clicks
+   HsRbdDamping: 5 clicks
+   Camber: -2.9 deg
+  RightRear:
+   CornerWeight: 3020 N
+   RideHeight: 48.1 mm
+   ShockDefl: 25.1 mm 150.0 mm
+   SpringDefl: 12.4 mm 86.5 mm
+   SpringPerchOffset: 40.5 mm
+   SpringRate: 120 N/mm
+   LsCompDamping: 3 clicks
+   HsCompDamping: 10 clicks
+   HsCompDampSlope: 5 clicks
+   LsRbdDamping: 4 clicks
+   HsRbdDamping: 11 clicks
+   Camber: -1.9 deg
+   ToeIn: +0.2 mm
+  Rear:
+   ThirdSpring: 500 N/mm
+   ThirdPerchOffset: 44.5 mm
+   ThirdSpringDefl: 10.0 mm 47.4 mm
+   ThirdSliderDefl: 26.7 mm 150.0 mm
+   ArbSize:  Medium
+   ArbBlades: 4
+   PushrodLengthOffset: -6.5 mm
+   CrossWeight: 50.0%
+ BrakesDriveUnit:
+  Lighting:
+   RoofIdLightColor: Blue
+  BrakeSpec:
+   PadCompound: Medium
+   FrontMasterCyl: 19.1 mm
+   RearMasterCyl: 20.6 mm
+   BrakePressureBias: 47.50%
+   BrakeBiasTarget: 0
+   BrakeBiasMigration: -2
+  HybridConfig:
+  Fuel:
+   FuelLevel: 44.5 L
+   FuelLowWarning: 10.0 L
+  TractionControl:
+   TractionControlGain: 4 (TCLAT)
+   TractionControlSlip: 5 (TCLON)
+  GearRatios:
+   GearStack: Long
+   SpeedInFirst: 115.8 Km/h
+   SpeedInSecond: 151.4 Km/h
+   SpeedInThird: 190.4 Km/h
+   SpeedInFourth: 233.4 Km/h
+   SpeedInFifth: 271.3 Km/h
+   SpeedInSixth: 304.1 Km/h
+   SpeedInSeventh: 339.1 Km/h
+  RearDiffSpec:
+   CoastDriveRampAngles: 45/70
+   ClutchFrictionPlates: 4
+   Preload: 80 Nm
