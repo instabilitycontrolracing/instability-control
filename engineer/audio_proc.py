@@ -26,6 +26,9 @@ W, R, UNDERFLOW, DRY, STOP, MODE, LOOP_GEN, BEAT, LOOP_GAIN, READY, CUT, BUSY_OU
 NCTRL = 16
 SCALE = 1_000_000                     # gains are stored as millionths
 NO_WINDOW, HIGH_PRIORITY = 0x08000000, 0x00000080
+HIGH_FLAG = r"C:\SimRacing\Tools\deck\audio_high_priority.on"
+SPIN_LIMIT = 0.5      # cores; a player above this for SPIN_SECONDS is stuck (seen 30 Oct: 2.4 cores after a device reset)
+SPIN_SECONDS = 8
 
 
 # =============================================================================== engineer side
@@ -161,8 +164,13 @@ def boost_process():
         k.SetProcessInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
         k.SetProcessInformation.restype = wintypes.BOOL
         h = k.GetCurrentProcess()
-        if k.SetPriorityClass(h, HIGH_PRIORITY):
+        # 2026-10-30 evening (#629): High priority class OFF by default. Since ic160 made it work, VR frames reached the
+        # headset late far more often (late frames 54-67% -> 81-90%). The sound thread keeps MMCSS "Pro Audio" (ThreadBoost),
+        # which is what protects the audio. The old behaviour comes back with C:\SimRacing\Tools\deck\audio_high_priority.on
+        if os.path.exists(HIGH_FLAG) and k.SetPriorityClass(h, HIGH_PRIORITY):
             done.append("high priority")
+        else:
+            done.append("normal priority")
 
         class PPTS(ctypes.Structure):
             _fields_ = [("Version", wintypes.ULONG), ("ControlMask", wintypes.ULONG), ("StateMask", wintypes.ULONG)]
@@ -395,12 +403,23 @@ def main(argv):
         return 2
     ctrl[READY] = 1
     n = 0
+    spin, cpu0, wall0 = 0, time.process_time(), time.monotonic()
+    rc = 0
     while not ctrl[STOP]:
         time.sleep(0.05)
         pl.reload_loop()
         n += 1
-        if n % 20 == 0 and not _parent_alive(ppid):           # the engineer is gone: so are we
-            break
+        if n % 20 == 0:
+            if not _parent_alive(ppid):                        # the engineer is gone: so are we
+                break
+            cpu1, wall1 = time.process_time(), time.monotonic()    # stuck-spinning guard: quit, the engineer restarts us
+            use = (cpu1 - cpu0) / max(0.001, wall1 - wall0)
+            cpu0, wall0 = cpu1, wall1
+            spin = spin + 1 if use > SPIN_LIMIT else 0
+            if spin >= SPIN_SECONDS:
+                ctrl[ERR] = 3
+                rc = 3
+                break
     try:
         stream.stop(); stream.close()
     except Exception:
@@ -410,7 +429,7 @@ def main(argv):
         cs.close(); rs.close()
     except Exception:
         pass
-    return 0
+    return rc
 
 
 if __name__ == "__main__":
