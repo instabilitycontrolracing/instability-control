@@ -670,7 +670,9 @@ class Mixer:
         if self.use_proc:
             try:
                 from .audio_proc import ProcOut
-                pr = ProcOut(self.rate, 2, device, seconds=4.0, name="crowd", loop=self.bed, log=self.log)
+                # device cushion well under AHEAD_S: the sound program asks for the whole cushion at once, so the engineer
+                # must already be further ahead than that (0.4 s cushion vs 0.35 s ahead ran it dry in bursts, 2026-10-29)
+                pr = ProcOut(self.rate, 2, device, seconds=4.0, name="crowd", loop=self.bed, log=self.log, latency=0.1)
                 pr.set_static(self.static); pr.set_loop_gain(self.bed_gain)
                 self.proc = pr
                 threading.Thread(target=self._feed, args=(pr,), daemon=True, name="crowd-feed").start()
@@ -731,7 +733,8 @@ class Mixer:
                 if u > g_u or d > g_d:
                     try:
                         from .voice import SOUND_GAPS
-                        SOUND_GAPS["crowd"] += (u - g_u) + (d - g_d)
+                        SOUND_GAPS["crowd"] += (u - g_u)
+                        SOUND_GAPS["crowd_bed"] = SOUND_GAPS.get("crowd_bed", 0) + (d - g_d)
                     except Exception:
                         pass
                     g_u, g_d = u, d

@@ -684,10 +684,11 @@ def sound_gaps_logger(log):
                     SOUND_GAPS["radio"] += pl.gaps()
                 except Exception:
                     pass
-            r, c = SOUND_GAPS["radio"], SOUND_GAPS["crowd"]
-            SOUND_GAPS["radio"] = SOUND_GAPS["crowd"] = 0
-            if r or c:
-                log(f"[sound] gaps in the last minute: radio {r}, crowd {c}")
+            r, c, b = SOUND_GAPS["radio"], SOUND_GAPS["crowd"], SOUND_GAPS.get("crowd_bed", 0)
+            SOUND_GAPS["radio"] = SOUND_GAPS["crowd"] = SOUND_GAPS["crowd_bed"] = 0
+            if r or c or b:
+                log(f"[sound] gaps in the last minute: radio {r}, crowd {c}"
+                    + (f" (engineer fell behind {b} times - the bed covered it)" if b else ""))
     threading.Thread(target=run, daemon=True, name="sound-gaps").start()
 
 
