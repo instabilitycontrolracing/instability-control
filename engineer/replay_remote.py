@@ -57,6 +57,7 @@ class ReplayRemote:
         self._dir = 0            # -1 rewinding, +1 fast-forwarding, 0 normal
         self._step = 0
         threading.Thread(target=self._loop, daemon=True).start()
+        threading.Thread(target=self._loop_dinput, daemon=True, name="music-dinput").start()
 
     def stop(self):
         self.running = False
@@ -143,6 +144,40 @@ class ReplayRemote:
             except Exception as e:
                 self.log(f"[replay remote] couldn't flag the moment (is Grandstand running?): {e!r}"[:160])
         threading.Thread(target=go, daemon=True).start()
+
+    # ---- 2026-10-29 (Angelo: "make it just work in both modes"): the same pad in its OTHER mode shows up as a plain
+    # "Gamepad" (USB id 0079:181c), not an Xbox controller - XInput can't see it. Read through Windows' game controller
+    # list instead: there the right stick click is button 15 (index 14). Music only - the replay buttons stay XInput.
+    DINPUT_PADS = {(0x0079, 0x181C): 14}
+
+    def _loop_dinput(self):
+        try:
+            from .buttons import _JOYINFOEX, _JOYCAPSW, JOY_RETURNBUTTONS
+            w = ctypes.windll.winmm
+        except Exception:
+            return
+        pads, next_scan, prev = {}, 0.0, {}
+        while self.running:
+            time.sleep(1 / 60)
+            now = time.monotonic()
+            if now >= next_scan:                         # which slots hold that pad (re-checked every 5 s: plug / unplug)
+                next_scan = now + 5.0
+                pads = {}
+                for i in range(16):
+                    caps = _JOYCAPSW()
+                    if w.joyGetDevCapsW(i, ctypes.byref(caps), ctypes.sizeof(caps)) == 0:
+                        bit = self.DINPUT_PADS.get((caps.wMid, caps.wPid))
+                        if bit is not None:
+                            pads[i] = bit
+            for i, bit in pads.items():
+                info = _JOYINFOEX(); info.dwSize = ctypes.sizeof(info); info.dwFlags = JOY_RETURNBUTTONS
+                if w.joyGetPosEx(i, ctypes.byref(info)) != 0:
+                    prev.pop(i, None)
+                    continue
+                down = bool(info.dwButtons >> bit & 1)
+                if down and not prev.get(i, True):
+                    threading.Thread(target=self.music, daemon=True).start()
+                prev[i] = down
 
     # ---- the loop
     def _loop(self):
