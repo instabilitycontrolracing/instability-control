@@ -154,7 +154,12 @@ def boost_process():
     try:
         import ctypes
         from ctypes import wintypes
-        k = ctypes.windll.kernel32
+        k = ctypes.WinDLL("kernel32", use_last_error=True)      # own instance: typed handles (64-bit safe)
+        k.GetCurrentProcess.restype = wintypes.HANDLE
+        k.SetPriorityClass.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        k.SetPriorityClass.restype = wintypes.BOOL
+        k.SetProcessInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        k.SetProcessInformation.restype = wintypes.BOOL
         h = k.GetCurrentProcess()
         if k.SetPriorityClass(h, HIGH_PRIORITY):
             done.append("high priority")
@@ -164,6 +169,8 @@ def boost_process():
         st = PPTS(1, 0x1 | 0x4, 0)            # EXECUTION_SPEED | IGNORE_TIMER_RESOLUTION, state 0 = never throttle
         if k.SetProcessInformation(h, 4, ctypes.byref(st), ctypes.sizeof(st)):    # ProcessPowerThrottling
             done.append("no power throttling")
+        else:
+            done.append(f"(throttling opt-out failed: {ctypes.get_last_error()})")
         if ctypes.windll.winmm.timeBeginPeriod(1) == 0:
             done.append("1 ms timer")
     except Exception as e:
