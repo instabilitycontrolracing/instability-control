@@ -340,9 +340,11 @@ async function initUI(state) {
   });
   // sound
   const vol = $("#vol"), rad = $("#rad");
-  setRange(vol, Math.round(S.volume * 100), 0, 300);   // #515: up to 3x (the limiter keeps it clean) $("#volR").textContent = Math.round(S.volume * 100) + "%";
+  // #515: up to 3x; 2026-10-31 (Angelo: "up to 3 times as loud as it currently is", he sits at 150 %): up to 500 %.
+  // The peak limiter keeps it from clipping. (The readout line used to sit inside this comment, so it never showed.)
+  setRange(vol, Math.round(S.volume * 100), 0, 500); $("#volR").textContent = Math.round(S.volume * 100) + "%";
   setRange(rad, Math.round(S.radio_strength * 100), 0, 200); $("#radR").textContent = radioName(S.radio_strength);
-  vol.addEventListener("input", () => { setRange(vol, +vol.value, 0, 300); $("#volR").textContent = vol.value + "%"; api.set("volume", vol.value / 100); });
+  vol.addEventListener("input", () => { setRange(vol, +vol.value, 0, 500); $("#volR").textContent = vol.value + "%"; api.set("volume", vol.value / 100); });
   rad.addEventListener("input", () => { setRange(rad, +rad.value, 0, 200); $("#radR").textContent = radioName(rad.value / 100); api.set("radio_strength", rad.value / 100); });
   $("#radReset").addEventListener("click", () => { setRange(rad, 100, 0, 200); $("#radR").textContent = "Your pick"; api.set("radio_strength", 1.0); });
   const dev = $("#dev");

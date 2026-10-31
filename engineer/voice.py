@@ -456,7 +456,10 @@ class Voice:
             vol = min(1.0, max(0.0, float(getattr(self, "rc_volume", 0.8))))
             if RadioFX.COND.get("pitlane"):
                 a = _pit_echo(a, self.sr if hasattr(self, "sr") else 24000)
-            return (a * vol * min(1.0, self.volume)).astype(np.float32), RC_TEXT.get(name, "Race control.")
+            # 2026-10-31 (Angelo: "the volume for the radio for every voice beside the engineer"): race control was capped
+            # at 100 % of the master volume, so it never got louder past 100 % like the team radio. Now it follows the
+            # master all the way up (same peak limiter), its own slider still sets it relative to the radio.
+            return _loud(a * vol, self.volume), RC_TEXT.get(name, "Race control.")
         if self.spotter and sid in SPOT_MAP:
             a, t = self._build_spotter(sid)
             if a is not None:

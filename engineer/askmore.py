@@ -215,7 +215,7 @@ class AskMore:
             step = max(5, min(50, int(n.group(1)))) / 100.0 if n else 0.10
             try:
                 cur = float(getattr(b.s, "volume", 1.0) or 1.0)
-                new = round(max(0.3, min(3.0, cur + (step if up else -step))), 2)
+                new = round(max(0.3, min(5.0, cur + (step if up else -step))), 2)   # 2026-10-31: up to 500 %
                 b.s.volume = new
                 try:
                     b.v.volume = new
@@ -996,7 +996,7 @@ class AskMore:
             except Exception:
                 pass
         if re.search(r"\b(louder|volume up|turn (it|yourself|the radio|the volume) up|speak up)\b", tt):
-            s.volume = min(3.0, round(float(getattr(s, "volume", 1.0)) + 0.1, 2)); b.v.volume = s.volume; save()
+            s.volume = min(5.0, round(float(getattr(s, "volume", 1.0)) + 0.1, 2)); b.v.volume = s.volume; save()
             return self.A("app_set", {"_variant": 3})
         if re.search(r"\b(quieter|volume down|turn (it|yourself|the radio|the volume) down|too loud)\b", tt):
             s.volume = max(0.2, round(float(getattr(s, "volume", 1.0)) - 0.1, 2)); b.v.volume = s.volume; save()
