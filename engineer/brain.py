@@ -1153,6 +1153,10 @@ class Brain:
 
     # ---------- multiclass traffic ----------
     def multiclass(self):
+        # ic168c (2026-10-31, Angelo: sitting in the pit box it kept saying "car ahead blue flag, careful on pass"):
+        # no traffic calls while we are in the pit lane / stall or crawling - the cars going by are not near us
+        if self.g("OnPitRoad", False) or self.g("PlayerCarInPitStall", False) or (self.g("Speed", 0) or 0) < 15:
+            return
         if not self.is_race() or self.finished:
             return
         now = self.clock()
