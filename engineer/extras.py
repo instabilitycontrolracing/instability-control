@@ -1484,6 +1484,14 @@ class RaceControl:
             # session number) on disk, so reloading into the same session or restarting the app doesn't say it again
             self.key = self._key(n)
             self.done |= set(self._said().get(self.key, []))
+            # loading into a session that is already running (it started more than a minute and a half ago): its
+            # opening calls were already made - nothing from race control until something new happens
+            try:
+                if float(b.g("SessionTime", 0) or 0) > 90:
+                    self.done |= {"practice", "qualifying", "gotogrid", "formation"}
+                    self._remember()
+            except Exception:
+                pass
         st = (b.sess_type or "").lower()
         state = int(b.g("SessionState", 0) or 0)
         if state > 0:
