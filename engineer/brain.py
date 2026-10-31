@@ -591,7 +591,9 @@ class Brain:
             self.say("car_black_flag", prio=PRIO_URGENT)
         if rise(F_REPAIR):
             self.say("heavy_damage", prio=PRIO_URGENT)
-        if (f & F_BLUE) and not self.is_quali():
+        # ic168 (2026-10-31, Angelo: sitting in the pit box after a tow it kept saying "car ahead blue flag, careful on pass"):
+        # no blue-flag call while we are in the pit lane or crawling - the cars going by on track are not ours to let past
+        if (f & F_BLUE) and not self.is_quali() and not self.g("OnPitRoad", False) and (self.g("Speed", 0) or 0) > 15:
             self.say("blue_flag", prio=PRIO_RACE, cooldown=25)
         yel = bool(f & (F_YELLOW | F_YELLOW_WAVING)) and not self.caution_on
         if yel and not self.yellow_on:
