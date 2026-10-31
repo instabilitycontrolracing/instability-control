@@ -684,7 +684,8 @@ class Mixer:
                 self.log(f"[crowd] sound program didn't start ({e!r}) - playing in the engineer")
         return self._start_inproc(device)
 
-    AHEAD_S = 0.6                               # the engineer stays this far ahead of the ears
+    AHEAD_S = 1.2                               # the engineer stays this far ahead of the ears (2026-10-31: 0.6 -> 1.2,
+                                                # it still fell behind 5-10x a minute; a crowd reaction 0.6 s later is fine)
 
     def set_bed(self, bed):
         self.bed = None if bed is None else np.ascontiguousarray(bed, np.float32)

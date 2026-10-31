@@ -218,10 +218,12 @@ class Player:
     XF_S = 1.0          # static <-> live blend
     DRY_S = 0.03        # quick blend into the bed when the engineer falls behind
     REFILL_S = 0.25     # ...and the live sound only comes back once this much is queued (no flutter between the two)
-    BACK_S = 0.3        # blend from the bed back to the live sound
+    BACK_S = 0.6        # blend from the bed back to the live sound (2026-10-31: 0.3 -> 0.6, the hand-back was audible)
+    UNDER = 0.3         # 2026-10-31 (#623/#624, "the crowd chops"): the bed stays mixed in UNDER the live crowd at this
+                        # level, so falling back on it (or coming back) is a small level change, not a switch of sound
 
-    def __init__(self, ctrl, ring, rate, loop_path=""):
-        self.ctrl, self.ring, self.rate = ctrl, ring, rate
+    def __init__(self, ctrl, ring, rate, loop_path="", name=""):
+        self.ctrl, self.ring, self.rate, self.name = ctrl, ring, rate, name
         self.frames, self.ch = ring.shape
         self.loop, self.lpos, self.loop_path, self.loop_gen = None, 0, loop_path, -1
         self.g_feed, self.g_bed, self.g_out = 1.0, 0.0, 1.0
@@ -309,7 +311,7 @@ class Player:
         elif self.dry:
             tf, tb = 0.0, 1.0                                  # the bed alone until the feed is well ahead again
         else:
-            tf, tb = 1.0, 0.0
+            tf, tb = 1.0, (self.UNDER if self.name == "crowd" else 0.0)   # the radio never gets a bed under it
         if static:
             speed_f = n / (self.rate * self.XF_S)
         elif self.dry:
@@ -370,7 +372,7 @@ def main(argv):
     rs = shared_memory.SharedMemory(name=ring_name)
     ctrl = np.ndarray((NCTRL,), np.int64, cs.buf)
     ring = np.ndarray((frames, ch), np.float32, rs.buf)
-    pl = Player(ctrl, ring, rate, loop_path)
+    pl = Player(ctrl, ring, rate, loop_path, name)
     pl.reload_loop()
     try:
         import gc
