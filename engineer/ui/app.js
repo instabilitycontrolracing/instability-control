@@ -525,6 +525,9 @@ async function initUI(state) {
     sb("#vStrat", "strategist_volume", 0, 500, pc(1), un, lab);
     sb("#vCrew", "crew_volume", 0, 500, pc(1), un, lab);
     sb("#vRc", "race_control_volume", 0, 500, pc(0.8), un, lab);
+    // ic166: a Test button beside each voice
+    const tb = (id, fn) => { const b = $(id); if (b) b.addEventListener("click", () => api[fn] && api[fn]()); };
+    tb("#vSpotT", "spot_test"); tb("#vStratT", "strat_test"); tb("#vCrewT", "crew_test"); tb("#vRcT", "rc_test");
   }
   $("#rcTest").addEventListener("click", () => api.rc_test && api.rc_test());
   // crowd (2026-10-24): Trackside crowd card

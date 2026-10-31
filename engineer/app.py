@@ -1698,6 +1698,12 @@ class Api:
                 self._speaker_obj().say("STRATEGIST", sent)
         return True
 
+    def crew_test(self):
+        """ic166 (Angelo: "a test button for each voice when adjusting the volume"): hear the mechanic / team voice
+        (an existing mechanic line, not a new one)."""
+        self._speaker_obj().say("MECHANIC", "Honestly, the car looks consistent in the data.")
+        return True
+
     def _pit_emit(self, e):
         self._q.put(e)
         rem = getattr(self, "_remote", None)
