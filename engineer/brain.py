@@ -593,8 +593,19 @@ class Brain:
             self.say("heavy_damage", prio=PRIO_URGENT)
         # ic168 (2026-10-31, Angelo: sitting in the pit box after a tow it kept saying "car ahead blue flag, careful on pass"):
         # no blue-flag call while we are in the pit lane or crawling - the cars going by on track are not ours to let past
-        if (f & F_BLUE) and not self.is_quali() and not self.g("OnPitRoad", False) and (self.g("Speed", 0) or 0) > 15:
-            self.say("blue_flag", prio=PRIO_RACE, cooldown=25)
+        if (f & F_BLUE) and not self.is_quali():
+            # ic168b: only when we are really out driving - not in the pit lane / stall, not being repaired, not on the tow
+            g = self.g
+            parked = (g("OnPitRoad", False) or g("PlayerCarInPitStall", False) or not g("IsOnTrack", True)
+                      or (g("PitRepairLeft", 0) or 0) > 0 or (g("PitOptRepairLeft", 0) or 0) > 0
+                      or (g("Speed", 0) or 0) < 15)
+            try:
+                from .voice import TOWING
+                parked = parked or bool(TOWING)
+            except Exception:
+                pass
+            if not parked:
+                self.say("blue_flag", prio=PRIO_RACE, cooldown=25)
         yel = bool(f & (F_YELLOW | F_YELLOW_WAVING)) and not self.caution_on
         if yel and not self.yellow_on:
             self.yellow_on = True
