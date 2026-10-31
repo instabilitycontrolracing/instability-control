@@ -1479,6 +1479,11 @@ class RaceControl:
         n = b.g("SessionNum", -1)
         if n != self.session:
             self.session, self.done, self.min_state = n, set(), 99
+            # ic169 (2026-10-31, Angelo: "dont let the race director voice play on load in, we are already in a session,
+            # it does not need to repeat"): what race control already said is remembered per session (event id +
+            # session number) on disk, so reloading into the same session or restarting the app doesn't say it again
+            self.key = self._key(n)
+            self.done |= set(self._said().get(self.key, []))
         st = (b.sess_type or "").lower()
         state = int(b.g("SessionState", 0) or 0)
         if state > 0:
@@ -1495,6 +1500,35 @@ class RaceControl:
         elif "practice" in st or "test" in st:
             self.play("practice")
 
+    _FILE = os.path.join(os.environ.get("LOCALAPPDATA", "."), "RaceEngineer", "rc_said.json")
+
+    def _key(self, n):
+        try:
+            wi = self.b.info("WeekendInfo", {}) or {}
+            return f"{wi.get('SubSessionID') or wi.get('SessionID') or 0}:{n}"
+        except Exception:
+            return f"0:{n}"
+
+    def _said(self):
+        try:
+            import json
+            return json.load(open(self._FILE, encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def _remember(self):
+        try:
+            import json
+            d = self._said()
+            d[getattr(self, "key", "0:0")] = sorted(self.done)
+            if len(d) > 60:
+                for k in list(d)[:-60]:
+                    d.pop(k, None)
+            os.makedirs(os.path.dirname(self._FILE), exist_ok=True)
+            json.dump(d, open(self._FILE, "w", encoding="utf-8"))
+        except Exception:
+            pass
+
     def play(self, name, once_before=()):
         if name in self.done or any(x in self.done for x in once_before):
             return
@@ -1504,6 +1538,7 @@ class RaceControl:
         if _grandstand_intro():
             return
         self.done.add(name)
+        self._remember()
         self.b.v.rc_volume = float(getattr(self.b.s, "race_control_volume", 0.8) or 0)
         # top priority: cuts whatever the engineer / strategist is saying, and the rest waits until it's done
         self.b.v.say_now("rc:" + name)
