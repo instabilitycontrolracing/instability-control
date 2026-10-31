@@ -134,14 +134,40 @@ class Link:
             return
         self.connected = on
         from . import audio_tool
-        audio_tool.EXCLUDE_PID = os.getpid() if on else None
-        self.log("[broadcast] connected - TV + stream get the broadcast radio" if on else "[broadcast] player gone - TV hears the engineer as before")
+        # ic171 (#685, 2026-10-31: "now we have no audio to the tv"): every change of EXCLUDE_PID makes Apollo restart the
+        # TV's sound capture. A short drop (the player hung up after a 10 s stall, then reconnected) flipped it back and
+        # forth every 15-20 s and the TV kept cutting out. Now a drop only changes the TV after the player has been gone
+        # 30 s (_loop); a reconnect inside that time changes nothing.
+        if not on:
+            self._gone_at = time.monotonic()
+            self.log("[broadcast] player dropped - reconnecting (TV unchanged)")
+            return
+        self._gone_at = None
+        changed = audio_tool.EXCLUDE_PID != os.getpid()
+        audio_tool.EXCLUDE_PID = os.getpid()
+        self.log("[broadcast] connected - TV + stream get the broadcast radio")
+        if changed:
+            try:
+                self.on_change()
+            except Exception as e:
+                self.log(f"[broadcast] {e!r}")
+        self.push_settings()
+
+    def _gone_check(self):
+        """ic171: the player really is gone (30 s) - the TV goes back to hearing the engineer itself."""
+        g = getattr(self, "_gone_at", None)
+        if self.connected or g is None or time.monotonic() - g < 30:
+            return
+        self._gone_at = None
+        from . import audio_tool
+        if audio_tool.EXCLUDE_PID is None:
+            return
+        audio_tool.EXCLUDE_PID = None
+        self.log("[broadcast] player gone - TV hears the engineer as before")
         try:
             self.on_change()
         except Exception as e:
             self.log(f"[broadcast] {e!r}")
-        if on:
-            self.push_settings()
 
     def _loop(self):
         # 2026-10-30 (#604): this thread hands the crowd over; at normal priority it waited behind the engineer's other
@@ -153,6 +179,7 @@ class Link:
             except Exception:
                 pass
         while self.running:
+            self._gone_check()
             if not getattr(self.s, "bcast_on", True):
                 self._close()
                 time.sleep(1)
@@ -596,7 +623,7 @@ class Player:
                     break
                 continue
             self.log("engineer connected")
-            c.settimeout(10)
+            c.settimeout(60)   # ic171: keep-alives come every 0.5 s; 10 s hung up on a busy engineer and flipped the TV sound
             try:
                 self._client(c)
             except Exception as e:
