@@ -1005,10 +1005,17 @@ class Brain:
         per = sum(self.fuel_laps[-4:]) / len(self.fuel_laps[-4:])
         fuel = self.g("FuelLevel", 0) or 0
         have = fuel / per if per > 0 else 99
-        st = "ok" if have >= ltg + 0.6 else ("short" if have >= ltg - 1.5 else ("critical" if have < 1.6 else "pit"))
+        # ic170 (2026-10-31, Angelo: told "fuel for 2 laps, 2 to go, we need lift and coast" with 2.6 laps in the car -
+        # he pitted for nothing): good = a quarter of a lap spare (per-lap burn is known to a few tenths of a litre);
+        # the laps said are what we HAVE rounded down and what we NEED rounded up, so the numbers always match the call
+        st = ("ok" if have >= ltg + 0.25 else "thin" if have >= ltg else
+              "short" if have >= ltg - 1.5 else ("critical" if have < 1.6 else "pit"))
         changed = st != self.prev.get("fuel_state")
         self.prev["fuel_state"] = st
-        laps = [int(have), int(ltg)]
+        if st == "thin":
+            return                      # makes it, with under a quarter lap spare: no call either way (ask the strategist)
+        import math as _m
+        laps = [int(have), int(ltg)] if st == "ok" else [int(have), int(_m.ceil(ltg))]
         if st == "critical":
             self.say("fuel_critical", prio=PRIO_URGENT, cooldown=60)
         elif st == "ok" and (changed or lc % 8 == 3):
@@ -1017,6 +1024,15 @@ class Brain:
             self.say("fuel_short", {"laps": laps}, prio=PRIO_RACE, cooldown=90)
         elif st == "pit" and changed:
             need = max(0.0, (ltg - have) * per + per * 0.3)
+            # ic170 (Angelo: "We need 62 gallons to finish for a car that holds 23 gallons doesn't make sense"): more
+            # than a tank to go = a multi-stop race - the strategist's stop plan says it; this line is for a top-up
+            di = self.info("DriverInfo", {}) or {}
+            try:
+                tank = float(di.get("DriverCarFuelMaxLtr") or 0) * float(di.get("DriverCarMaxFuelPct") or 1)
+            except (TypeError, ValueError):
+                tank = 0.0
+            if tank > 0 and need > tank * 0.9:
+                return
             if not self.metric():
                 need = need / 3.785
             self.say("fuel_to_add", {"n": max(1, round(need)), "fuel unit": max(1, round(need))}, cooldown=200)

@@ -483,8 +483,11 @@ class Strategist:
                     else:
                         out.append(L.say("sa_box", lap=f_lap(max(done + 1, min(60, done + int(have)))))["text"])
                 else:
-                    hl, nl = max(1, min(60, int(have))), max(1, min(60, int(round(target))))
-                    if have >= target + 0.5:
+                    # ic170 (Angelo: "We're short. You've got 8 laps, we need 8"): what we have rounded DOWN, what we need
+                    # rounded UP; good with a quarter lap spare, and "short" only when the numbers really are short
+                    import math as _m
+                    hl, nl = max(1, min(60, int(have))), max(1, min(60, int(_m.ceil(target - 1e-6))))
+                    if have >= target + 0.25 or hl >= nl:
                         out.append(L.say("sa_fuel_ok", flaps=f_laps(hl), laps=f_laps(nl))["text"])
                     else:
                         need = (1 - have / (target + 0.15)) * 100
