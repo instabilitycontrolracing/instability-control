@@ -595,6 +595,8 @@ class Api:
             return False
         if key in ("volume", "radio_strength", "crowd_volume"):
             value = round(float(value), 2)
+        elif key in ("spotter_volume", "strategist_volume", "crew_volume", "race_control_volume"):   # ic165
+            value = max(0.0, min(5.0, round(float(value), 2)))
         elif key == "crowd_max_db":                            # crowd (2026-10-24): never above -6 dBFS
             value = max(-48.0, min(-6.0, float(value)))
         elif key == "gaps_every":
@@ -630,6 +632,9 @@ class Api:
                 return False                                   # H: is the business Google Drive: never
         setattr(self._s, key, value)
         self._s.save()
+        if key in ("spotter_volume", "race_control_volume") and self._engine is not None:   # ic165: live
+            self._engine.voice.spot_volume = float(getattr(self._s, "spotter_volume", 1.0) or 0)
+            self._engine.voice.rc_volume = float(getattr(self._s, "race_control_volume", 0.8) or 0)
         if key.startswith("bcast_") and getattr(self, "_bcast", None):
             self._bcast.push_settings()
         if key.startswith("vault_"):

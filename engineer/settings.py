@@ -38,6 +38,11 @@ class Settings:
     shift_length: int = 60           # ms
     race_control: bool = True        # race director clips at session start / grid / formation / green
     race_control_volume: float = 0.8
+    # ic165 (2026-10-31, Angelo: "put all of them on adjustable sliders ... as loud as our sound card can put out"):
+    # every voice that isn't the engineer gets its own level, 0..5 (x the master volume, peak-limited)
+    spotter_volume: float = 1.0
+    strategist_volume: float = 1.0
+    crew_volume: float = 1.0          # mechanic, team and everyone else in the pit crew
     overlay_radio: bool = True       # show what the team says as captions on the Grandstand overlay
     # crowd (2026-10-24): trackside crowd (Race Control page), files in CrewChiefVoices\Trackside
     crowd_on: bool = True

@@ -162,7 +162,11 @@ class Speaker:
             try:
                 self._ensure_player()
                 audio = self._fx(audio) if self._fx else audio
-                audio = (audio * float(getattr(self.s, "volume", 1.0))).astype(np.float32)
+                # ic165: strategist / rest of the crew have their own level on top of the master, peak-limited like the radio
+                from .voice import _loud
+                k = 1.0 if role == "ENGINEER" else float((getattr(self.s, "strategist_volume", 1.0) if role == "STRATEGIST"
+                                                          else getattr(self.s, "crew_volume", 1.0)) or 0)
+                audio = np.asarray(_loud(audio, float(getattr(self.s, "volume", 1.0)) * k), dtype=np.float32)
                 self._playing = True
                 from .voice import RADIO, PRIO_INFO
                 for attempt in (1, 2):            # cut off by the spotter? say the line again once it's clear

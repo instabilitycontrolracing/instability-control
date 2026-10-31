@@ -104,6 +104,7 @@ class Engine:
         except Exception:
             pass
         self.voice.spotter = getattr(settings, "spotter_voice", "") or ""
+        self.voice.spot_volume = float(getattr(settings, "spotter_volume", 1.0) or 0)   # ic165
         self.voice.driver_name = getattr(settings, "driver_name", "") or ""   # beta (2026-10-24): no name fallback
         self.voice.driver_name_say = getattr(settings, "driver_name_say", "") or ""   # #542: how to say it
         self.corners = Corners(LANDMARKS, self.voice.blocks.get("corner", {}), exists=self.voice.clip_exists)
@@ -116,6 +117,7 @@ class Engine:
     # settings that change live
     def apply(self):
         self.voice.volume = self.s.volume
+        self.voice.spot_volume = float(getattr(self.s, "spotter_volume", 1.0) or 0)   # ic165
         self.voice.fx.set_strength(self.s.radio_strength)
         self.voice.spotter = getattr(self.s, "spotter_voice", "") or ""
         self.voice.driver_name = getattr(self.s, "driver_name", "") or ""     # beta (2026-10-24): no name fallback

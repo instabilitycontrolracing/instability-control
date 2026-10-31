@@ -517,7 +517,15 @@ async function initUI(state) {
     sb("#spMin", "spot_min_kmh", 0, 120, (x) => x ?? 30, (x) => x, (v) => v ? v + " km/h" : "always");
   }
   $("#sbTest").addEventListener("click", () => api.beep_test && api.beep_test());
-  sb("#rcVol", "race_control_volume", 0, 100, (x) => Math.round((x ?? 0.8) * 100), (x) => x / 100, (v) => v + "%");
+  sb("#rcVol", "race_control_volume", 0, 500, (x) => Math.round((x ?? 0.8) * 100), (x) => x / 100, (v) => v + "%");
+  // ic165: a level for every voice that isn't the engineer (Sound > Voices)
+  if ($("#vSpot")) {
+    const pc = (d) => (x) => Math.round((x ?? d) * 100), un = (x) => x / 100, lab = (v) => v + "%";
+    sb("#vSpot", "spotter_volume", 0, 500, pc(1), un, lab);
+    sb("#vStrat", "strategist_volume", 0, 500, pc(1), un, lab);
+    sb("#vCrew", "crew_volume", 0, 500, pc(1), un, lab);
+    sb("#vRc", "race_control_volume", 0, 500, pc(0.8), un, lab);
+  }
   $("#rcTest").addEventListener("click", () => api.rc_test && api.rc_test());
   // crowd (2026-10-24): Trackside crowd card
   sb("#crowdVol", "crowd_volume", 0, 100, (x) => Math.round((x ?? 0.3) * 100), (x) => x / 100, (v) => v + "%");

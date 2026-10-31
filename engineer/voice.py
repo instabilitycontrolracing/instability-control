@@ -285,6 +285,7 @@ class Voice:
         self.on_say = None     # callback(text) for the window's live readout
         self._alive = True
         self.rc_volume = 0.8   # race control clips (Settings > Race Control)
+        self.spot_volume = 1.0 # ic165: spotter calls (Settings > Sound > Voices)
         self.spotter = ""      # "" = engineer's voice; a built-in spotter ("Max"); or a CrewChief one ("cc:Clare")
         if output:
             self.player = _Player(self.sr, device)
@@ -444,7 +445,7 @@ class Voice:
         if a is None:
             return None, None
         lead = np.zeros(int(0.03 * self.sr), np.float32)
-        return _loud(self.fx(np.concatenate([lead, a, lead]), cond=False), self.volume), SPOT_TEXT[sid]   # spotter: never dips
+        return _loud(self.fx(np.concatenate([lead, a, lead]), cond=False), self.volume * float(getattr(self, "spot_volume", 1.0) or 0)), SPOT_TEXT[sid]   # spotter: never dips
 
     def build(self, sid, fills=None):
         fills = fills or {}
@@ -453,7 +454,7 @@ class Voice:
             a = self._load(os.path.join(RC_DIR, name + ".wav"))
             if a is None:
                 return None, None
-            vol = min(1.0, max(0.0, float(getattr(self, "rc_volume", 0.8))))
+            vol = min(5.0, max(0.0, float(getattr(self, "rc_volume", 0.8))))   # ic165: up to 500 %
             if RadioFX.COND.get("pitlane"):
                 a = _pit_echo(a, self.sr if hasattr(self, "sr") else 24000)
             # 2026-10-31 (Angelo: "the volume for the radio for every voice beside the engineer"): race control was capped
@@ -511,7 +512,8 @@ class Voice:
                 if k == "corner":
                     shown = shown.title().replace("Nascar", "NASCAR")
                 said = said.replace(f"[{k}]", shown, 1)
-        return _loud(self.fx(x), self.volume), said
+        k = float(getattr(self, "spot_volume", 1.0) or 0) if sid in SPOT_MAP else 1.0   # ic165: spotter calls in any voice
+        return _loud(self.fx(x), self.volume * k), said
 
     # ---------- speaking ----------
     def say(self, sid, fills=None, prio=PRIO_INFO, max_age=None):
