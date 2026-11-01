@@ -145,10 +145,15 @@ class RadioFX:
         at = np.random.randint(0, len(a) - n + 1)
         return a[at:at + n]
 
+    # ic177 (#703, Angelo: "that is the way the radio should sound in ear and on broadcast"): the F1-style radio
+    # (radio_f1.py - full voice, open-channel bed from his own F1 recording, compressed, no fizz). False = the old sound.
+    F1 = True
+
     def __call__(self, x, cond=True):
-        if self.board is None:
+        f1 = RadioFX.F1 and np.ndim(x) == 1
+        if self.board is None and not f1:
             return x
-        if cond and RadioFX.COND.get("pitwall", True) and RadioFX.COND.get("on", True):
+        if not f1 and cond and RadioFX.COND.get("pitwall", True) and RadioFX.COND.get("on", True):
             bed = self._pitwall(len(x) if np.ndim(x) == 1 else x.shape[-1])
             if bed is not None:
                 lvl = np.sqrt(np.mean(np.square(x))) + 1e-9
@@ -156,10 +161,14 @@ class RadioFX:
                     x = x + bed * lvl * 0.06                # about 24 dB under the voice, then through the radio
                 else:
                     x = x + bed[None, :] * lvl * 0.06
-        y = self.board(x, self.sr)
+        if f1:
+            from . import radio_f1
+            y = radio_f1.process(x, self.sr)
+        else:
+            y = self.board(x, self.sr)
         c = RadioFX.COND
         rain, far = (float(c.get("rain", 0) or 0), float(c.get("far", 0) or 0)) if (cond and c.get("on", True)) else (0.0, 0.0)
-        hiss = self.hiss
+        hiss = self.hiss if not f1 else -200.0           # ic177: the open-channel bed is the noise now (rain / far still add)
         if hiss is not None and (rain > 0.05 or far > 0.3):
             hiss = max(hiss, -62) + 9 * rain + 4 * max(0.0, far - 0.3)
         if hiss is not None and hiss > -85:

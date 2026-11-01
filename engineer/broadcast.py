@@ -108,7 +108,8 @@ class Link:
         if self.connected:
             js = json.dumps({"grit": float(getattr(self.s, "bcast_grit", 1.0)), "db": float(getattr(self.s, "bcast_db", 6.0)),
                              "keyup": bool(getattr(self.s, "bcast_keyup", True)),
-                             "crowd_db": float(getattr(self.s, "bcast_crowd_db", 0.0))}).encode()
+                             "crowd_db": float(getattr(self.s, "bcast_crowd_db", 0.0)),
+                             "style": str(getattr(self.s, "radio_style", "f1") or "f1")}).encode()
             try:
                 self.q.put_nowait(HDR.pack(3, 0, 0, len(js)) + js)
             except queue.Full:
@@ -338,6 +339,7 @@ class Player:
         # ic173 (#675): the driver's live radio - a short queue of processed 48 kHz blocks, played back to back
         self.live, self.live_n, self.live_play, self.live_open = collections.deque(), 0, False, False
         self.live_zi, self.live_prev, self.live_pk = None, 0.0, 0.05
+        self.live_f1 = None                                  # ic177: the F1 radio for his live voice
         self.cur, self.pos = None, 0
         self.crowd = np.zeros((int(RATE * self.RING_S), 2), np.float32)
         self.cw = self.cr = 0
@@ -393,6 +395,17 @@ class Player:
 
     def add_call(self, x, sr):
         c = self.cfg
+        if c.get("style", "f1") == "f1":
+            # ic177 (#703): the engineer's line already has the F1 radio sound (the same in his ear) - only the level and
+            # the key-up / squelch here, no second radio filter on top
+            from .voice import _loud
+            v = _loud(_resample(np.asarray(x, np.float32), sr), 10 ** (c["db"] / 20.0))
+            if c["keyup"]:
+                k, s_ = _fixed(keyup_click, RATE, 1), _fixed(squelch_tail, RATE, 2)
+                v = np.concatenate([k * 10 ** (c["db"] / 40.0), np.zeros(int(0.03 * RATE), np.float32), v, s_ * 10 ** (c["db"] / 40.0)]).astype(np.float32)
+            with self.lock:
+                self.calls.append(v)
+            return
         call = build_call(x, sr, c["grit"], c["db"], c["keyup"])
         with self.lock:
             self.calls.append(call)
@@ -503,6 +516,13 @@ class Player:
         with self.lock:
             self.live.clear(); self.live_n = 0; self.live_play = False; self.live_open = True
             self.live_zi, self.live_prev, self.live_pk = None, 0.0, 0.05
+            self.live_f1 = None
+            if self.cfg.get("style", "f1") == "f1":
+                try:
+                    from . import radio_f1
+                    self.live_f1 = radio_f1.Stream(RATE)
+                except Exception:
+                    self.live_f1 = None
             if self.cfg.get("keyup", True) or True:
                 k = (_fixed(keyup_click, RATE, 1) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
                 self.live.append(np.concatenate([k, np.zeros(int(0.03 * RATE), np.float32)]))
@@ -518,6 +538,14 @@ class Player:
         xx = np.concatenate([[self.live_prev], x]).astype(np.float32)
         y = np.interp(np.arange(n_out) * (sr / RATE), np.arange(len(xx)), xx).astype(np.float32)
         self.live_prev = float(x[-1])
+        if self.live_f1 is not None:                         # ic177: his voice gets the same F1 radio as the engineer
+            y = self.live_f1.block(y) * 10 ** (self.cfg.get("db", 0.0) / 20.0)
+            with self.lock:
+                if self.live_n > 1.5 * RATE:
+                    while self.live and self.live_n > 0.3 * RATE:
+                        self.live_n -= len(self.live.popleft())
+                self.live.append(y.astype(np.float32)); self.live_n += len(y)
+            return
         g = float(max(0.0, min(2.0, self.cfg.get("grit", 1.0))))
         try:
             from scipy.signal import butter, sosfilt, sosfilt_zi
