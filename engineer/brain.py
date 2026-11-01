@@ -1035,7 +1035,8 @@ class Brain:
                 return
             if not self.metric():
                 need = need / 3.785
-            self.say("fuel_to_add", {"n": max(1, round(need)), "fuel unit": max(1, round(need))}, cooldown=200)
+            n_ = max(1, round(need))       # ic174: "fuel unit" is the singular/plural count (the card showed "62 62")
+            self.say("fuel_to_add", {"n": n_, "fuel unit": 1 if n_ == 1 else 2}, cooldown=200)
 
     def race_progress(self, ltg):
         lap_based = 0 <= (self.g("SessionLapsRemainEx", 32767) or 32767) < 32000

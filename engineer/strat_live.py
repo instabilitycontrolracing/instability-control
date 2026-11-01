@@ -251,6 +251,19 @@ class Strategist:
             o["outlook"] = ol
             beats.append(sum(1 for x in ol if x["beat"]))
         rec = max(range(len(plans)), key=lambda i: (beats[i], -i))
+        # ic174 (#678, 2026-10-31, Angelo: "the radio keeps telling me each stint inaccurate ... the logic for fuel needs
+        # refinement"): in the 10-31 race the pick swapped between plans that needed 6-8 % fuel saved a lap and plans that
+        # didn't (3 stops, 2, 3, 1, 2, 1 within an hour) - he wasn't saving that much, so the "1 stop" plans were never
+        # possible and he needed extra splashes. A saving plan is only recommended while his last laps actually save it.
+        try:
+            fl_recent = [x for x in list(getattr(self.b, "fuel_laps", []) or [])[-3:] if x and x > 0]
+            base = float(m.get("fuel_lap") or 0)
+            achieved = max(0.0, (1 - (sum(fl_recent) / len(fl_recent)) / base) * 100) if fl_recent and base > 0 else 0.0
+            ok = [i for i, o in enumerate(plans) if float(o["plan"].get("save", 0) or 0) <= achieved + 1.0]
+            if ok:
+                rec = max(ok, key=lambda i: (beats[i], -i))
+        except Exception:
+            pass
         self.plans, self.rec = plans, rec
         self.outlook = plans[rec].get("outlook", [])
         r = plans[rec]["res"]
