@@ -292,6 +292,19 @@ def _fixed(fn, sr, seed):
     return _FIXED[k]
 
 
+def _chime(kind, db):
+    """ic180 (#714, Angelo: "the tones you made me for the radio key up and out ... put that in the broadcast too"): the
+    same struck chimes he hears in the headset (cues.py) for his own radio on the TV / stream. None if unavailable."""
+    try:
+        from . import cues
+        x = np.asarray(cues.sound(kind), np.float32)
+        if cues.SR != RATE:
+            x = _resample(x, cues.SR, RATE)
+        return (x * 0.45 * 10 ** (db / 40.0)).astype(np.float32)
+    except Exception:
+        return None
+
+
 def keyup_click(sr=RATE, seed=1):
     """Radio key-up: a short transmit click plus a burst of filtered static (~90 ms)."""
     rng = np.random.default_rng(seed)
@@ -524,7 +537,9 @@ class Player:
                 except Exception:
                     self.live_f1 = None
             if self.cfg.get("keyup", True) or True:
-                k = (_fixed(keyup_click, RATE, 1) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
+                k = _chime("radio_down", self.cfg.get("db", 0.0))     # ic180: his key-up chime
+                if k is None:
+                    k = (_fixed(keyup_click, RATE, 1) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
                 self.live.append(np.concatenate([k, np.zeros(int(0.03 * RATE), np.float32)]))
                 self.live_n += len(self.live[-1])
 
@@ -570,7 +585,9 @@ class Player:
 
     def live_end(self):
         with self.lock:
-            sq = (_fixed(squelch_tail, RATE, 2) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
+            sq = _chime("radio_up", self.cfg.get("db", 0.0))          # ic180: his key-out chime (with its squelch)
+            if sq is None:
+                sq = (_fixed(squelch_tail, RATE, 2) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
             self.live.append(sq); self.live_n += len(sq)
             self.live_open = False
 
