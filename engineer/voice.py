@@ -508,7 +508,10 @@ class Voice:
             i = 0
             while f"[{k}]" in said:
                 xv = vals[min(i, len(vals) - 1)]; i += 1
-                shown = F.shown(k, xv) or str(round(xv, 1) if isinstance(xv, float) else xv).replace("_", " ")
+                if k in ("fuel unit", "speed unit"):       # ic174: the word, not the count ("Fuel target 1.6 2 per lap")
+                    shown = F.fill_text(k, xv, bool(getattr(self, "fuel_metric", True))) or ""
+                else:
+                    shown = F.shown(k, xv) or str(round(xv, 1) if isinstance(xv, float) else xv).replace("_", " ")
                 if k == "corner":
                     shown = shown.title().replace("Nascar", "NASCAR")
                 said = said.replace(f"[{k}]", shown, 1)
