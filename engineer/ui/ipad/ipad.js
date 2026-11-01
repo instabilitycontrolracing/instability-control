@@ -779,6 +779,8 @@ function wirePit() {
   const tap = (id, fn) => el(id).addEventListener("click", fn);
   const tank = () => (PIT && PIT.tank) || 0;
   const step = () => (PIT && PIT.metric === false ? 3.785 : 1);
+  // ic188 (#740, D6): Copy - tells the engineer you heard the box call (no more "Did you copy?")
+  if (el("copyBtn")) tap("copyBtn", async () => { const b = el("copyBtn"); b.classList.add("copied"); await post("/api/copy", {}); setTimeout(() => b.classList.remove("copied"), 900); });
   tap("pPlan", async () => { const r = await post("/api/pit", { action: "propose" }); if (r && r.state) { DRAFT = null; onPit(r.state); } });
   tap("fMinus", () => { if (!DRAFT) return; DRAFT.fuel = Math.max(0, (DRAFT.fuel >= 900 ? tank() : DRAFT.fuel || 0) - step()); paintDraft(); });
   tap("fPlus", () => { if (!DRAFT) return; DRAFT.fuel = Math.min(tank() || 999, (DRAFT.fuel >= 900 ? 0 : DRAFT.fuel || 0) + step()); paintDraft(); });

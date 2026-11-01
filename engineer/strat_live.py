@@ -886,6 +886,11 @@ class Strategist:
             else:
                 self.tyre_call = "dry"
                 self.speak("ENGINEER", f"Track's drying. Slicks are {g:.0f} seconds a lap faster now. Box this lap for slicks.")
+            if self.tyre_call:                      # ic188 (#740, D6): a box call - wait for his "copy"
+                try:
+                    self.b.r1101.expect_copy("tyres")
+                except Exception:
+                    pass
         elif not change and self.tyre_call and lc - self._call_lap >= 2:
             self.tyre_call = None
         if lvl >= 3 and lc - self._tip_lap >= 2 and self._call_lap != lc:

@@ -147,6 +147,21 @@ class Settings:
     calls_target_pace: bool = False  # practice at race-pace stage: on target / tenths down in a sector
     calls_brake_cues: bool = False   # practice: the next braking-board step, ~300 m before the corner
     practice_race_prep: bool = False # treat practice as race prep (Race pace stage) whatever the lap count
+    # ic188 (#740) radio calls approved 2026-11-01 (engineer/radio_1101.py) - on: once-a-race / rate-limited calls on plain
+    # data; off: calls that need judgement or a button (turn on after a test)
+    calls_short_lines: bool = True   # #702 shorter versions of long calls (only once they are recorded)
+    calls_hazard: bool = True        # A5 "Car stopped, [corner]. Careful."
+    calls_start_brief: bool = True   # B1 formation "warm the tyres and brakes", B2 on the grid "clean first lap"
+    calls_night: bool = True         # A6 lights at dusk, D5 first dark lap, track cooling
+    calls_drink: bool = True         # E1 "Drink." at each stop and every ~15 min on the pit straight
+    calls_last_30: bool = True       # E2 last 30 minutes
+    calls_rest_after: bool = True    # E4 after an endurance race: rest before you drive anywhere
+    calls_dunlop: bool = False       # B3 Le Mans: "brake early into Dunlop" at the green (inside the lap-1 quiet)
+    calls_class_traffic: bool = False   # A1 / A2 slower-class traffic into [corner], GT ahead in the Porsche Curves
+    calls_let_go: bool = False       # A4 faster car behind: "let him go"
+    calls_caution_plan: bool = False # D3 once a stint: "if there's a yellow, we box / stay out"
+    calls_rain_plan: bool = False    # D4 wets now / wet set-up / drying
+    calls_readback: bool = False     # D6 "Box this lap. Confirm." until you press the copy button (wheel or iPad)
     calls_racecraft: bool = True     # striking distance, where to pass/defend, rival trouble, slow car ahead, projected finish...
     race_mode: bool = False          # off by default for new installs (it closes other apps); #353 (2026-10-27): close non-essential apps while the sim runs, reopen them after (racemode.py)
     radio_beep: bool = True          # chirp when the radio button goes down / comes up (2026-10-26)

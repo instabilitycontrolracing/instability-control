@@ -606,9 +606,159 @@ WET_TRACK_LINES = {
 APPROVED_1028 = RADIO_1028 + [x for v in WET_TRACK_LINES.values() for x in v]
 
 
+# ---- 2026-11-01 (#740): approved by Angelo ("I okay the wording of every line including the 31 new ones and anything
+# else you think of") - sheets claude/engineer-lines-725 / -722 / -702-for-approval.md. Same treatment as APPROVED_1028:
+# on the render list straight away (tools/vocab_spec.py), the stand-in voice says them until they are rendered.
+# Excluded on purpose: damage lines (702 #16 small_damage - standing rule), battery / build-mode coaching (722 #5, no
+# deploy increase on the GTP), the spotter's C2 calls (spotter voices, not the engineer's library). Wired in
+# engineer/radio_1101.py (A-E) and engineer/tracklearn.py (F). [n] stands in for the sheet's [tenths] / [metres]
+# (the recorded number blocks are [n]); what is said is word for word the sheet.
+RADIO_1101 = [
+    # A1 slower-class traffic ahead, on the straight before them
+    ("rl_traffic_into", "[class] traffic into [corner]. Pick your spot."),
+    ("rl_traffic_into", "Slower cars ahead at [corner]."),
+    ("rl_traffic_into", "[n] GTs ahead into [corner]."),
+    # A2 a GT ahead as we reach the Porsche Curves (Le Mans)
+    ("rl_gt_curves", "GT ahead in the Curves. Sit behind, pass on the run to the Fords."),
+    ("rl_gt_curves", "Stay behind him through the Curves. Fords is your spot."),
+    # A3 on the outside of a GT into a braking zone
+    ("rl_outside_gt", "Outside. Careful, he turns in."),
+    ("rl_outside_gt", "He doesn't see you. Back out."),
+    # A4 faster car behind: fighting him costs time
+    ("rl_let_him_go", "Faster car behind. Let him go."),
+    ("rl_let_him_go", "He's not our race. Let him by."),
+    ("rl_let_him_go", "Don't fight him. Save the time."),
+    # A5 car stopped / very slow on track ahead (iRacing doesn't say which side: no left / right)
+    ("rl_hazard_stopped", "Car stopped, [corner]. Careful."),
+    ("rl_hazard_stopped", "Stopped car, [corner]. Watch it."),
+    ("rl_hazard_slow", "Slow car ahead at [corner]."),
+    # A6 once, when it gets dark
+    ("rl_lights_on", "Lights on the cars now. Flash early when you pass."),
+    ("rl_lights_on", "It's getting dark. One flash before you pass."),
+    # B1 start of the formation lap
+    ("rl_form_warm", "Warm the tyres and brakes."),
+    ("rl_form_warm", "Weave and warm them up. Brakes too."),
+    # B2 on the grid (variant 1 only when the race really is 2 h 40)
+    ("rl_grid_clean", "Lap one, zero incidents. We have two hours forty."),
+    ("rl_grid_clean", "Clean first lap. The race is long."),
+    ("rl_grid_clean", "No heroes on lap one."),
+    # B3 just after the green (Le Mans)
+    ("rl_dunlop", "Brake early into Dunlop."),
+    ("rl_dunlop", "Dunlop. Early on the brakes."),
+    # D1 tyre maths
+    ("rl_tyres_skip", "No tyres saves [n] seconds. We skip them."),
+    ("rl_tyres_take", "Tyres are worth it. We take four."),
+    # D3 caution plan, once per stint
+    ("rl_yellow_box", "If there's a yellow, we box."),
+    ("rl_yellow_box", "Yellow comes, we pit."),
+    ("rl_yellow_stay", "If there's a yellow, we stay out."),
+    ("rl_yellow_stay", "Yellow comes, we stay out."),
+    # D4 rain
+    ("rl_rain_in", "Rain in [minutes] minutes."),
+    ("rl_rain_in", "Rain coming. [minutes] minutes."),
+    ("rl_wets_now", "It's wet. Box for wets this lap."),
+    ("rl_wets_now", "Wets this lap. Box, box."),
+    ("rl_wet_setup", "Bias back, TC up."),
+    ("rl_wet_setup", "Wet now. Bias back a bit, more TC."),
+    ("rl_drying", "Dry line forming. Slicks soon."),
+    ("rl_drying", "Track's drying. Slicks next stop."),
+    # D5 night
+    ("rl_night_brake", "Night's coming. Brake a bit earlier for a lap."),
+    ("rl_night_brake", "Dark now. Find your markers, brake early."),
+    ("rl_track_cooling", "Track's cooling. Tyres take longer."),
+    ("rl_track_cooling", "Cooler now. Give the tyres a lap."),
+    # D6 read-back (needs the "copy" button)
+    ("rl_confirm_box", "Box this lap. Confirm."),
+    ("rl_confirm_box", "Did you copy? Box this lap."),
+    ("rl_copy", "Copy."),
+    ("rl_copy", "Thanks."),
+    # E looking after you
+    ("rl_drink", "Drink."),
+    ("rl_drink", "Take a drink."),
+    ("rl_drink", "Water, when you can."),
+    ("rl_last_30", "Last stint. Clean and tidy."),
+    ("rl_last_30", "Thirty to go. Stay sharp."),
+    ("rl_rest_after", "Take a break before you drive anywhere."),
+    ("rl_rest_after", "Rest a bit before you get in a real car."),
+]
+# F track coaching in practice (#729): the sids engineer/tracklearn.py already says (all OFF by default in Settings)
+TRACK_COACH_1101 = [
+    ("tl_banker", "Banker lap in. Now we build."),                              # F1
+    ("tl_banker", "Good, a clean one. Let's push from here."),
+    ("tl_focus_brake_early", "[corner], you can brake later. Small steps."),     # F2
+    ("tl_focus_brake_early", "[corner], move your marker a bit later."),
+    ("tl_focus_brake_late", "[corner], too deep. Brake earlier, roll it in."),   # F3
+    ("tl_focus_brake_late", "[corner], over-driving the entry."),
+    ("tl_focus_trail", "[corner], keep a little brake as you turn in."),         # F4
+    ("tl_focus_trail", "[corner], trail it in."),
+    ("tl_focus_coasting", "[corner], you're coasting. One pedal always working."),   # F5
+    ("tl_focus_entry", "[corner], the time is in the entry."),                   # F6
+    ("tl_focus_min_speed", "[corner], carry more speed through the middle."),     # F7
+    ("tl_focus_throttle", "[corner], earlier and smoother on the throttle."),     # F8
+    ("tl_focus_exit", "[corner], exit speed. That's where the time is."),        # F9
+    ("tl_target_on", "On target. Same again."),                                  # F10
+    ("tl_target_on", "That's the pace."),
+    ("tl_target_down", "Sector [sector], [n] tenths down."),                     # F11 ([n] = tenths)
+    ("tl_target_down", "[n] tenths off in sector [sector]."),
+    ("tl_brake_cue", "[corner], try [n] metres."),                               # F12 ([n] = metres)
+    ("tl_brake_cue", "Next: [corner], brake at [n]."),
+]
+# #702: shorter / extra versions of long calls that repeat word for word. Own sids (s_<call>): brain.say switches to
+# them (radio_1101.SHORT) once they are RENDERED - until then the old recorded line plays, as the sheet says; with two
+# or three versions the voice never plays the same one twice in a row. Not here: 702 #16 small_damage (damage line),
+# #23 (no wording on the sheet).
+SHORT_1101 = [
+    ("s_leader_pitting", "P1 is in the box. Plan A."),
+    ("s_leader_pitting", "Leader's pitting. We stay on Plan A."),
+    ("s_leader_pitting", "P1 boxing this lap. Nothing changes for us."),
+    ("s_car_ahead_pitting", "Car ahead is pitting. Push now."),
+    ("s_car_ahead_pitting", "He's boxing. Clean air, push."),
+    ("s_car_ahead_pitting", "Car ahead in the pits. Go, go."),
+    ("s_fuel_ok", "Fuel is good to the end."),
+    ("s_fuel_ok", "Fuel's fine. No saving."),
+    ("s_fuel_ok", "We make it on fuel. Just drive."),
+    ("s_halfway", "Half race. All good."),
+    ("s_halfway", "Halfway. Car's looking good."),
+    ("s_halfway", "That's half distance. Keep it clean."),
+    ("s_b2_halfway", "Half race. Good job so far."),
+    ("s_b2_halfway", "Halfway there. Strong job."),
+    ("s_b2_halfway", "Half distance. Keep this rhythm."),
+    ("s_half_fuel_ok", "Half race. Fuel is OK."),
+    ("s_half_fuel_ok", "Halfway, fuel on target."),
+    ("s_hours_left", "[n] hours to go."),
+    ("s_hours_left", "[n] hours left. Stay with it."),
+    ("s_lost_place", "[P]. Stay calm, we fight back."),
+    ("s_lost_place", "[P]. Reset, it's a long race."),
+    ("s_lost_place", "[P]. We get him back."),
+    ("s_pit_exit", "Limiter off. Mode out."),
+    ("s_pit_exit", "Limiter off. Go."),
+    ("s_rejoin_pits", "Watch the pit exit. Mode out till the tires are warm."),
+    ("s_rejoin_pits", "Careful at pit exit. Tires are cold."),
+    ("s_rolling_start", "Rolling start. Mode formation."),
+    ("s_rolling_start", "Rolling start. Warm the tires."),
+    ("s_one_minute", "One minute. Mode start."),
+    ("s_one_minute", "One minute to go. Get ready."),
+    ("s_minutes", "[minutes] minutes."),
+    ("s_minutes", "[minutes] minutes to go."),
+    ("s_leader_finished", "Leader has finished. This is the last lap."),
+    ("s_leader_finished", "Last lap. Bring it home."),
+    ("s_fuel_short", "Fuel for [laps] laps, [laps] to go. Lift and coast on the straights."),
+    ("s_pace_consistent", "Lap times are steady. Good."),
+    ("s_pace_consistent", "Very consistent. Behind is struggling on tires."),
+    ("s_five_min_podium", "Five minutes. Podium is ours, no risks."),
+    ("s_five_min_podium", "Five to go. Bring the podium home."),
+    ("s_one_hour_left", "One hour to go. Stay focused."),
+    ("s_one_hour_left", "Last hour. Keep it tidy."),
+    ("s_incident_close", "[n] incidents. We're close to the limit, careful."),
+    ("s_tiredness_check", "Long stint. How are you feeling?"),
+    ("s_engine_hot", "Engine's hot. Find some clean air."),
+]
+APPROVED_1101 = RADIO_1101 + TRACK_COACH_1101 + SHORT_1101
+
+
 def table():
     """{sid: [text of variant 1, variant 2, ...]}"""
     out = {}
-    for sid, text in NEW + APPROVED_1028:
+    for sid, text in NEW + APPROVED_1028 + APPROVED_1101:
         out.setdefault(sid, []).append(text)
     return out

@@ -50,6 +50,8 @@ class Brain:
         self.ask = AskMore(self)
         from .incar import InCar                      # in-car adjustments by voice + in-car coaching (2026-10-24)
         self.incar = InCar(self)
+        from .radio_1101 import Calls1101             # ic188 (#740): the radio calls approved 2026-11-01
+        self.r1101 = Calls1101(self)
         self.strat = None                             # set by the app: the strategist (forecast answers)
 
     # ---------- helpers ----------
@@ -139,6 +141,11 @@ class Brain:
 
     def say(self, sid, fills=None, prio=PRIO_INFO, cooldown=0, key=None, max_age=None):
         key = key or sid
+        try:                                 # ic188 (#702): the shorter versions of long calls, once they are rendered
+            from .radio_1101 import short_sid
+            sid, fills = short_sid(self, sid, fills)
+        except Exception:
+            pass
         now = self.clock()
         if cooldown and now - self.cool.get(key, -1e9) < cooldown:
             return False
@@ -149,6 +156,9 @@ class Brain:
             return False                     # 2026-10-29: no flags / passes / gaps while you're being towed back
         self.cool[key] = now
         self.v.say(sid, fills, prio, max_age=max_age)
+        r = getattr(self, "r1101", None)
+        if r is not None and sid in r.BOX_SIDS:
+            r.expect_copy(sid)               # ic188 (#740, D6): "Box this lap. Confirm." if he doesn't press copy
         return True
 
     def once_log(self, key, e):
@@ -535,6 +545,11 @@ class Brain:
         except Exception as e:
             if self.once_log("ask", e):
                 self.log(f"[ask] {e!r}")
+        try:
+            self.r1101.tick()
+        except Exception as e:
+            if self.once_log("r1101", e):
+                self.log(f"[radio 1101] {e!r}")
 
     def _lap1_quiet(self):
         """ic185 (#726 / research B4: fewest words when the attention load is highest): from the green until about a
@@ -1012,7 +1027,9 @@ class Brain:
                         sid_ = "minutes_left" if "minutes_left" in getattr(self.v, "lines", {}) else "minutes_ask"
                         self.say(sid_, {"minutes": m}, prio=PRIO_RACE)
                         if sid_ == "minutes_ask":
-                            self.feedback_asked = self.clock()
+                            from .radio_1101 import short_sid
+                            if short_sid(self, sid_, None)[0] == sid_:     # ic188: the short version asks nothing
+                                self.feedback_asked = self.clock()
                         break
         # ---- last lap, flag-free ----
         if self.prev.get("last_lap_said"):
@@ -1370,6 +1387,8 @@ class Brain:
             self.s.gaps = True; return A("talk")
         if intent == "radio_check":
             return A("radio_check")
+        if intent == "copy":                 # ic188 (#740, D6): the copy button (wheel binding / iPad)
+            return self.r1101.copy()
         if self.x.answer(intent):
             return True
         return A("ans_didnt_catch")

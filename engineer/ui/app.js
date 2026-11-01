@@ -88,6 +88,8 @@ function makeMock() {
     calls_practice_traffic: true, calls_sectors: true, calls_weather: true, calls_tyres: true, shift_beep: false, shift_pitch: 1400, shift_volume: 0.25, shift_point: 1.0, shift_length: 60, race_control: true, race_control_volume: 0.8, overlay_radio: true,
     lap_readout: [], binds: {}, chat_enabled: true, low_sr_below: 2, low_sr_rookies: false, sector_alert: 0.35,
     traffic_warn: 2.5, press_unit: "psi", press_step: 1, driver_name: "", driver_name_say: "",
+    calls_short_lines: true, calls_hazard: true, calls_start_brief: true, calls_night: true, calls_drink: true, calls_last_30: true, calls_rest_after: true,
+    calls_dunlop: false, calls_class_traffic: false, calls_let_go: false, calls_caution_plan: false, calls_rain_plan: false, calls_readback: false,
     calls_racecraft: true, calls_fight_coach: true, pit_tones: true, hold_for_chat: true, net_warnings: true, auto_telemetry: true, fuel_buffer_laps: 0, vault_on: true, vault_drive_on: true, vault_drive_quota_gb: 8, vault_dir: "", vault_drive_dir: "G:\\My Drive\\Instability Control\\Telemetry",
     sig_overlap: false, sig_spray: false, sig_revlimit: false, sig_launch: false,
     crowd_on: true, crowd_volume: 0.3, crowd_max_db: -18, crowd_mute: false, crowd_pa: true, crowd_heli: true, crowd_heli_cabin: true, crowd_ambience: true, crowd_mute_pits: true, crowd_duck: true,
@@ -685,7 +687,7 @@ async function initUI(state) {
   const CMDS = [["say_again", "Say again"], ["gap_ahead", "Gap ahead"], ["gap_behind", "Gap behind"], ["position", "Position"],
     ["fuel", "Fuel"], ["laps_left", "Laps left"], ["pit_plan", "Box plan"], ["pit_out", "Where we come out"],
     ["damage", "Damage"], ["tyres", "Tyres"], ["irating", "iRating"], ["weather", "Weather"],
-    ["mark_behind", "Mark car behind"], ["mark_ahead", "Mark car ahead"], ["quiet", "Radio quiet"], ["talk", "Radio back on"]];
+    ["mark_behind", "Mark car behind"], ["mark_ahead", "Mark car ahead"], ["quiet", "Radio quiet"], ["talk", "Radio back on"], ["copy", "Copy (box call read-back)"]];
   const binds = S.binds || {};
   $("#cmdBinds").innerHTML = CMDS.map(([k, n]) => `<div class="cmd-row"><span class="name">${n}</span>
     <div class="bind grow ${binds[k] ? "" : "unset"}" id="b-bind-${k}">${bindLabel(binds[k])}</div>

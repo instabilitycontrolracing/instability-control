@@ -11,7 +11,8 @@ estimated or filled in. When the data isn't there the advice is left out (None /
                                         T5      coasting, lifts on straights, square braking, min speed vs best per corner
                                         T4      braking-board steps per corner;  T9 target pace;  T10 reference sheet
     Live                                the live hooks (run / banker tracking, off-track + incident marks per lap, the
-                                        proposed calls - sids that have no recorded lines yet are skipped by brain.say)
+                                        calls - ic188 (#740): their lines are approved (lines_new.TRACK_COACH_1101, F1-F12);
+                                        every one stays behind its own switch, all off by default)
 """
 import json, math, os, threading, time
 
@@ -769,7 +770,8 @@ class Live:
                             if last["delta"] <= 0:
                                 self.pending.append(("tl_target_on", {}))
                             elif sd and wv is not None and wv >= 0.1:
-                                self.pending.append(("tl_target_down", {"sector": worst + 1, "tenths": int(round(wv * 10))}))
+                                self.pending.append(("tl_target_down", {"sector": worst + 1, "n": int(round(wv * 10)),
+                                                                                  "tenths": int(round(wv * 10))}))   # ic188: [n] = tenths
             except Exception as e:
                 self.log(f"[track] analyse: {e!r}")
             finally:
@@ -802,7 +804,7 @@ class Live:
             if prev < x <= d and st["corner"] not in self.cued:
                 self.cued.add(st["corner"])
                 try:
-                    b.say("tl_brake_cue", {"corner": st["corner"], "metres": st["next_before"]}, max_age=3)
+                    b.say("tl_brake_cue", {"corner": st["corner"], "n": st["next_before"], "metres": st["next_before"]}, max_age=3)   # ic188: [n] = metres
                 except Exception:
                     pass
 

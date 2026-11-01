@@ -442,6 +442,11 @@ class Racecraft:
             corner = (b.c.at(p * L) or b.c.nearest_behind(p * L, 250)) if getattr(b, "c", None) else None
             sid = "stopped_ahead" if v < 2.5 else "slow_ahead"
             f = {"corner": corner, "_variant": 1} if corner else {"_variant": 2}
+            if corner and self.s("calls_hazard", True):
+                # ic188 (#740, A5 approved 2026-11-01): "Car stopped, [corner]. Careful." / "Slow car ahead at [corner]."
+                # (no left / right: iRacing doesn't say which side of the road). Without a corner name: the old line.
+                sid = "rl_hazard_stopped" if v < 2.5 else "rl_hazard_slow"
+                f = {"corner": corner}
             self.say(sid, f, prio=PRIO_URGENT, max_age=3)
             return
 

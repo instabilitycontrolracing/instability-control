@@ -65,6 +65,7 @@ BIND_ACTIONS = {
     "tyres": ("intent", "tyres"), "irating": ("intent", "irating"), "weather": ("intent", "weather"),
     "mark_behind": ("cmd", "mark the car behind"), "mark_ahead": ("cmd", "mark the car ahead"),
     "quiet": ("intent", "quiet"), "talk": ("intent", "talk"),
+    "copy": ("intent", "copy"),          # ic188 (#740, D6): "copy" after a box call (read-back)
 }
 
 
@@ -683,6 +684,15 @@ class Api:
     def radio_check(self):
         if self._engine:
             self._engine.voice.test_tone()
+
+    def copy_ack(self):
+        """ic188 (#740, D6): the iPad's Copy button - same as the "copy" wheel button (answers a box call)."""
+        eng = self._engine
+        b = eng.brain if eng else None
+        if b is None:
+            return False
+        self._log("[button] copy (iPad)")
+        return bool(b.answer("copy"))
 
     def demo(self):
         try:

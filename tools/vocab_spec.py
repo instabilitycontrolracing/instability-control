@@ -446,6 +446,9 @@ _spec = _ilu.spec_from_file_location("lines_new", _os.path.join(_here, "..", "en
 _m = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_m)
 for _sid, _text in _m.APPROVED_1028:
     add(_sid, E, _text)
+# ---- 2026-11-01 (#740) approved radio lines (engineer/lines_new.py APPROVED_1101): always rendered, same as above.
+for _sid, _text in _m.APPROVED_1101:
+    add(_sid, E, _text)
 
 # ---- v62 (DRE parity): new lines live in engineer/lines_new.py (the stand-in voice says them until rendered).
 # They are added to the render list only once the owner has approved the wording (tools/v62_approved.txt exists).

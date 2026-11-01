@@ -260,6 +260,8 @@ class Remote:
                         out = a.setup_sheet_build()
                     else:
                         out = a.setup_sheet(body.get("id"))
+                elif u.path == "/api/copy":                       # ic188 (#740, D6): "copy" after a box call
+                    out["ok"] = bool(a.copy_ack()) if hasattr(a, "copy_ack") else False
                 elif u.path == "/api/ask":
                     t = (body.get("text") or "").strip()
                     if t:

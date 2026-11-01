@@ -366,7 +366,16 @@ class Voice:
         if not vs:
             return None, None
         want = fills.get("_variant")
-        text = vs[want - 1] if want and 0 < want <= len(vs) else random.choice(vs)
+        if want and 0 < want <= len(vs):
+            text = vs[want - 1]
+        else:
+            # ic188 (#740, #702: "the exact same radio message" every time): like the recorded lines, never the same
+            # version twice in a row when there are two or more
+            last = getattr(self, "_last_variant", {}).get("standin:" + sid) if texts is None else None
+            k = random.choice([i for i in range(len(vs)) if i != last] or list(range(len(vs))))
+            if texts is None and hasattr(self, "_last_variant"):
+                self._last_variant["standin:" + sid] = k
+            text = vs[k]
         used = {}
         def sub(m):
             name = m.group(1)
