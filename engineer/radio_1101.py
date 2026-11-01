@@ -482,7 +482,7 @@ class Calls1101:
     # ------------------------------------------------------------------ D6 read-back (off; needs the copy button)
     def expect_copy(self, origin=""):
         """A box call went out: if he doesn't press "copy" within ~8 s, ask once."""
-        if not self.on("calls_readback"):
+        if not self.on("calls_readback") or not self.b.is_race():   # ic189 (#744): race sessions only
             return
         self.copy_wait = (self.b.clock() + 8.0, origin)
         self.copy_said = False
@@ -504,7 +504,7 @@ class Calls1101:
 
     def copy(self):
         """The copy button (wheel binding "copy" or the iPad's Copy). True = handled (never 'didn't catch')."""
-        if self.copy_wait:
+        if self.copy_wait and self.b.is_race():   # ic189 (#744): never outside a race (the button is his reset there)
             self.copy_wait = None
             self.say("rl_copy", prio=PRIO_URGENT, max_age=5, variants=(1, 2), chat=False)
         return True

@@ -708,6 +708,10 @@ class Api:
         kind, what = BIND_ACTIONS.get(action, (None, None))
         eng = self._engine
         b = eng.brain if eng else None
+        if action == "copy" and (b is None or not b.is_race()):
+            # ic189 (#744, Angelo: "I also use that button for active reset when not in a race"): outside a race session
+            # the copy button is his reset - the engineer stays completely silent (no "no data", no "copy")
+            return
         self._log(f"[button] {action}")
         if kind == "pit" and getattr(self, "_pit", None):
             self._pit.propose()

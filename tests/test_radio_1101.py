@@ -539,3 +539,20 @@ def test_everything_on_never_errors():
     step(b, clk, 1.0, 70)
     assert not [l for l in logs if "1101" in str(l)], logs
     assert "rl_rest_after" in rl(v)
+
+
+# ------------------------------------------------------------------ ic189 (#744): outside a race the button is his reset
+def test_copy_silent_in_test_and_practice():
+    for sess in ("Offline Testing", "Practice", "Lone Qualify"):
+        b, src, v, clk = mk(session=sess, calls_readback=True)
+        b.say("bf_box", prio=VO.PRIO_URGENT)           # a box call in a test session (fuel etc.)
+        step(b, clk, 1.0, 3)
+        assert b.answer("copy") is True                 # his active-reset press
+        step(b, clk, 1.0, 40)
+        assert "rl_copy" not in rl(v) and "rl_confirm_box" not in rl(v), sess
+        assert "ans_didnt_catch" not in [x[0] for x in getattr(v, "said", [])], sess
+
+
+def test_copy_button_does_nothing_outside_a_race_in_the_app():
+    src = open(os.path.join(ROOT, "engineer", "app.py"), encoding="utf-8").read()
+    assert 'if action == "copy" and (b is None or not b.is_race()):' in src
