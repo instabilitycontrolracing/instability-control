@@ -126,6 +126,42 @@
   $("vzStop").addEventListener("click", () => { if (V.t0 == null) return; V.el = (performance.now() - V.t0) / 1000; V.t0 = null; $("vzClock").classList.remove("run"); vzTick(); paintViz(); });
   $("vzReset").addEventListener("click", () => { V.t0 = null; V.el = null; $("vzClock").classList.remove("run"); vzTick(); paintViz(); });
 
+  // ------------------------------------------------------------------ ic187 (#734/#733): segment timer
+  const G = { sig: "", timer: 0 };
+  const setS = (x) => !x ? DASH : `TC ${x.tc_lat ?? "–"}/${x.tc_lon ?? "–"} · BB ${x.bias ?? "–"} · MIG ${x.mig ?? "–"}`;
+  async function segApi() {
+    try { const r = await fetch(`/api/segments?k=${encodeURIComponent(KEY)}`); return r.ok ? await r.json() : null; }
+    catch (e) { return null; }
+  }
+  function paintSeg(d) {
+    const sig = JSON.stringify(d);
+    if (sig === G.sig) return;
+    G.sig = sig;
+    if (!d || !d.ok) { $("segBody").innerHTML = `<div class="emp">${E((d && d.why) || "Can't reach the Race Engineer on the PC.")}</div>`; return; }
+    const segs = d.segments || [];
+    const rows = segs.map((s) => {
+      const b = s.best, l = s.last, dl = b && l ? l.t - b.t : null;
+      return `<tr class="${s.running ? "run" : ""}"><td class="n">${E(s.name)}</td><td class="${l && l.off ? "offc" : ""}">${l ? secT(l.t) : DASH}</td>`
+        + `<td class="best">${b ? secT(b.t) : DASH}</td><td class="${dl == null ? "" : dl > 0.05 ? "up" : "dn"}">${dl == null ? DASH : sgn(dl)}</td>`
+        + `<td>${s.n}</td><td>${l && l.min != null ? l.min.toFixed(0) : DASH}</td><td>${l ? l.exit.toFixed(0) : DASH}</td><td class="txt">${l ? E(setS(l.set)) : ""}</td></tr>`;
+    }).join("");
+    const combos = segs.filter((s) => (s.by_settings || []).length > 1).map((s) =>
+      `<div class="combo"><span class="lbl" style="margin-right:10px">${E(s.name)} · by settings</span>`
+      + s.by_settings.map((c) => `<span>${E(setS(c))}: <b>${secT(c.best)}</b> best · ${secT(c.avg)} avg · ${c.n} tr${c.n === 1 ? "y" : "ies"}</span>`).join("") + `</div>`).join("");
+    const ld = d.last_done;
+    const last = ld ? `<div class="lastd">Last finished: ${E(ld.name)} <b>${secT(ld.t)}</b> <span class="x">· ${E(ld.at.slice(11))} · ${E(setS(ld.set))}${ld.off ? " · had an off" : ""}</span></div>` : "";
+    $("segBody").innerHTML = last + `<table><thead><tr><th>SEGMENT</th><th>LAST</th><th>BEST</th><th>LAST vs BEST</th><th>TRIES</th><th>MIN km/h</th><th>EXIT km/h</th><th style="text-align:left">SETTINGS (LAST TRY)</th></tr></thead><tbody>${rows}</tbody></table>`
+      + (combos ? `<div style="margin-top:10px">${combos}</div>` : "");
+    $("segSrc").textContent = `${d.track || ""} · your own list: ${d.file}`;
+  }
+  async function segLoop() {
+    const d = await segApi();
+    paintSeg(d);
+    clearTimeout(G.timer);
+    G.timer = setTimeout(segLoop, d && (d.segments || []).some((s) => s.running) ? 1000 : 3000);
+  }
+  segLoop();
+
   async function loop() {
     const d = await api();
     paint(d);

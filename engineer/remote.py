@@ -53,6 +53,8 @@ class Remote:
         self.laps = LapStore(log=log)            # iPad lap analysis memory, kept across restarts (lap_store.py)
         from .tracklearn import Live as _TL
         self.tl = _TL(log=log)                   # ic186 (#729): track learning - runs, banker lap, off / incident marks
+        from .segments import Segments as _SG
+        self.seg = _SG(log=log)                  # ic187 (#734/#733): segment timer - custom sectors + pit box -> PlayStation exit
         self._places = {"track": None, "stops": [], "t": 0.0}   # 2026-10-25: the lap's named stops + themes, from Grandstand
         self._places_busy = False
         from .aids import Aids
@@ -180,6 +182,13 @@ class Remote:
                         return self._json(tracklearn.view(remote.laps, remote.tl, getattr(remote.api, "_s", None), log=remote.log))
                     except Exception as e:
                         return self._json({"ok": False, "why": repr(e)})
+                if u.path == "/api/segments":                     # ic187 (#734/#733): the segment timer on the TRACK page
+                    if not self._ok(q):
+                        return self._send(403, b"no key", "text/plain")
+                    try:
+                        return self._json(remote.seg.view())
+                    except Exception as e:
+                        return self._json({"ok": False, "why": repr(e), "segments": []})
                 if u.path == "/api/state":
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
@@ -403,6 +412,10 @@ class Remote:
     def feed(self, brain, pit):
         now = time.time()
         if brain is None:
+            try:
+                self.seg.save(force=True)        # ic187: keep the segment tries when the sim closes
+            except Exception:
+                pass
             if self.last is not None:
                 self.last = None
                 self.push("off", {})
@@ -415,6 +428,12 @@ class Remote:
             if not getattr(self, "_tl_err", False):
                 self._tl_err = True
                 self.log(f"[track] {e!r}")
+        try:
+            self.seg.tick(brain)                 # ic187: segment timer - a few reads, interpolated crossings
+        except Exception as e:
+            if not getattr(self, "_seg_err", False):
+                self._seg_err = True
+                self.log(f"[segments] {e!r}")
         np_ = len(getattr(self.laps, "parts", None) or [])
         if np_ != getattr(self, "_parts_n", np_) or (np_ and (self.laps.parts[0].get("no") != getattr(self, "_parts_top", None))):
             try:                 # 2026-10-28 (#321): a partial lap's sectors were just kept - the iPad list gets them now

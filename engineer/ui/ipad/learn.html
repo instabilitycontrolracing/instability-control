@@ -81,6 +81,14 @@ td.note { min-width: 160px; border-left: 1px dashed var(--rule2); }
 .tag.step { background: rgba(52,210,123,.13); color: #86EFAC; } .tag.hold { background: rgba(248,113,113,.15); color: #FCA5A5; }
 .tag.settle { background: rgba(255,201,60,.13); color: var(--yellow); } .tag.at_best { background: rgba(192,132,252,.18); color: var(--purple); }
 /* visualisation timer */
+/* ic187 segment timer */
+#segBody td.best { color: var(--purple); } #segBody td.offc { color: #FCA5A5; }
+#segBody tr.run td.n::after { content: "  ● RUNNING"; font: 700 9.5px Inter; letter-spacing: .12em; color: var(--green); }
+#segBody .combo { margin: 2px 0 10px 4px; font: 600 12px Inter; color: var(--t3); }
+#segBody .combo b { color: var(--gold2); font: 700 12.5px var(--num); }
+#segBody .combo span { display: inline-block; margin-right: 16px; }
+#segBody .lastd { margin-top: 8px; font: 600 15px Inter; color: var(--t2); }
+#segBody .lastd b { font: 700 22px var(--num); color: var(--gold2); }
 .viz { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; align-items: center; }
 .viz .clock { font: 700 64px/1 var(--num); letter-spacing: .02em; }
 .viz .clock.run { color: var(--gold2); }
@@ -100,6 +108,11 @@ td.note { min-width: 160px; border-left: 1px dashed var(--rule2); }
   <button class="pill" id="back">DASHBOARD</button>
 </header>
 <div id="page"></div>
+<section class="panel card wide" style="margin-top:14px" id="segCard">
+  <div class="hd"><span class="lbl">Segment timer</span><span class="src" id="segSrc">your own sectors · pit box tries start when you leave the stall</span></div>
+  <div id="segBody"><div class="emp">Loading…</div></div>
+  <p class="small">A try only counts if you drive all the way through it (a reset or tow cancels it). Times are in seconds; purple = your best, red = a try with an off. "By settings" shows the best time for each TC LAT / TC LON / bias / MIG you tried (clean tries only).</p>
+</section>
 <section class="panel card wide" style="margin-top:14px">
   <div class="hd"><span class="lbl">Visualisation timer</span><span class="src">eyes closed: drive one lap in your head, tap STOP at the line</span></div>
   <div class="viz">
