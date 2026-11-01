@@ -83,6 +83,21 @@ class Link:
             a = np.asarray(audio, dtype=np.float32).reshape(-1)
             self._put(1, int(sr), 1, a)
 
+    # ic173 (#675): the driver's radio, live while the button is held - start (key-up), 16 kHz mic blocks, end (squelch)
+    def live_start(self):
+        if self.connected and getattr(self.s, "bcast_on", True):
+            self._live = True
+            self._put(5, 16000, 1, np.zeros(0, np.float32))
+
+    def live_chunk(self, a, sr):
+        if getattr(self, "_live", False) and self.connected:
+            self._put(6, int(sr), 1, np.asarray(a, np.float32).reshape(-1))
+
+    def live_end(self):
+        if getattr(self, "_live", False):
+            self._live = False
+            self._put(7, 16000, 1, np.zeros(0, np.float32))
+
     def crowd(self, block):
         if self.connected and getattr(self.s, "bcast_on", True) and getattr(self.s, "bcast_crowd", True):
             b = np.asarray(block, dtype=np.float32)
@@ -320,6 +335,9 @@ class Player:
         self.log = log
         self.cfg = {"grit": 1.0, "db": 6.0, "keyup": True, "crowd_db": 0.0, "bed_gain": 0.0}
         self.calls = []                                    # queued calls (numpy mono)
+        # ic173 (#675): the driver's live radio - a short queue of processed 48 kHz blocks, played back to back
+        self.live, self.live_n, self.live_play, self.live_open = collections.deque(), 0, False, False
+        self.live_zi, self.live_prev, self.live_pk = None, 0.0, 0.05
         self.cur, self.pos = None, 0
         self.crowd = np.zeros((int(RATE * self.RING_S), 2), np.float32)
         self.cw = self.cr = 0
@@ -481,6 +499,75 @@ class Player:
         self.queued -= step
         self.frac = need - step
 
+    def live_start(self):
+        with self.lock:
+            self.live.clear(); self.live_n = 0; self.live_play = False; self.live_open = True
+            self.live_zi, self.live_prev, self.live_pk = None, 0.0, 0.05
+            if self.cfg.get("keyup", True) or True:
+                k = (_fixed(keyup_click, RATE, 1) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
+                self.live.append(np.concatenate([k, np.zeros(int(0.03 * RATE), np.float32)]))
+                self.live_n += len(self.live[-1])
+
+    def live_chunk(self, x, sr):
+        """One mic block -> 48 kHz (continuous across blocks), the broadcast radio band with filter state carried over
+        (no clicks at the joins), drive, a slow level follower, and into the queue."""
+        x = np.asarray(x, np.float32)
+        if not len(x):
+            return
+        n_out = int(round(len(x) * RATE / sr))
+        xx = np.concatenate([[self.live_prev], x]).astype(np.float32)
+        y = np.interp(np.arange(n_out) * (sr / RATE), np.arange(len(xx)), xx).astype(np.float32)
+        self.live_prev = float(x[-1])
+        g = float(max(0.0, min(2.0, self.cfg.get("grit", 1.0))))
+        try:
+            from scipy.signal import butter, sosfilt, sosfilt_zi
+            if self.live_zi is None:
+                self._live_sos = butter(4, [300 + 150 * g, min(3400 - 600 * g, RATE * 0.45)], btype="band", fs=RATE, output="sos")
+                self.live_zi = sosfilt_zi(self._live_sos) * 0.0
+            y, self.live_zi = sosfilt(self._live_sos, y, zi=self.live_zi)
+            y = y.astype(np.float32)
+        except Exception:
+            pass
+        drive = 1.0 + 3.0 * g
+        y = np.tanh(y * drive * 4.0) / np.tanh(drive)
+        pk = float(np.abs(y).max()) if len(y) else 0.0
+        self.live_pk = max(pk, self.live_pk * 0.97, 0.02)
+        gain = min(8.0, 0.55 / self.live_pk) * 10 ** (self.cfg.get("db", 0.0) / 20.0)
+        y = np.clip(y * gain, -0.95, 0.95).astype(np.float32)
+        with self.lock:
+            if self.live_n > 1.5 * RATE:                      # never let the radio fall behind: drop the oldest
+                while self.live and self.live_n > 0.3 * RATE:
+                    self.live_n -= len(self.live.popleft())
+            self.live.append(y); self.live_n += len(y)
+
+    def live_end(self):
+        with self.lock:
+            sq = (_fixed(squelch_tail, RATE, 2) * 10 ** (self.cfg.get("db", 0.0) / 40.0)).astype(np.float32)
+            self.live.append(sq); self.live_n += len(sq)
+            self.live_open = False
+
+    def _live_mix(self, out, frames):
+        """(inside render, lock held) the live radio: starts once ~0.1 s is queued, so mic blocks arriving a little
+        unevenly never leave gaps; plays to the end after the button is released."""
+        if not self.live_play:
+            if self.live_n >= int(0.10 * RATE) or (not self.live_open and self.live_n > 0):
+                self.live_play = True
+            else:
+                return
+        i = 0
+        while i < frames and self.live:
+            blk = self.live[0]
+            k = min(frames - i, len(blk))
+            out[i:i + k, 0] += blk[:k]; out[i:i + k, 1] += blk[:k]
+            if k == len(blk):
+                self.live.popleft()
+            else:
+                self.live[0] = blk[k:]
+            self.live_n -= k; i += k
+        if not self.live:
+            self.live_play = False
+            self.live_n = 0
+
     def render(self, out):
         frames = out.shape[0]
         if frames > self._n:
@@ -558,6 +645,8 @@ class Player:
                 self.pos += n
                 if self.pos >= len(self.cur):
                     self.cur = None
+            if self.live_n or self.live:
+                self._live_mix(out, frames)                # ic173: the driver's radio, live
         np.clip(out, -0.98, 0.98, out=out)
 
     LATENCY = 0.2              # device cushion (was 0.12; 2026-10-30, #604)
@@ -669,6 +758,12 @@ class Player:
                 self.add_call(data, sr)
             elif kind == 2:
                 self.add_crowd(data.reshape(-1, 2))
+            elif kind == 5:                                # ic173: the driver keyed the radio
+                self.live_start()
+            elif kind == 6:
+                self.live_chunk(data, sr)
+            elif kind == 7:
+                self.live_end()
             elif kind == 4:                                # the crowd bed (2026-10-30, #604)
                 self.set_bed(data.reshape(-1, 2))
                 self.log(f"crowd bed received ({len(data) // 2 / RATE:.0f} s)")

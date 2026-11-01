@@ -266,6 +266,7 @@ class Api:
             try:
                 from .ptt import Listener
                 self._ptt = Listener(log=self._log, device=self._s.mic_device or None)
+                self._ptt.live = getattr(self, "_bcast", None)  # ic173 (#675): his radio live on the TV / stream
             except Exception as e:
                 self._ptt = None
                 self._log(f"[voice] {e!r}")

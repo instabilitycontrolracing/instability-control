@@ -16,6 +16,7 @@ class Listener:
         self.rec = None
         self.ready = False
         self._buf, self._stream, self._lock = [], None, threading.Lock()
+        self.live = None          # ic173 (#675): the broadcast link - the driver's radio goes to TV / stream while held
         threading.Thread(target=self._load, daemon=True).start()
 
     def _load(self):
@@ -43,8 +44,16 @@ class Listener:
             if self._stream:
                 return
             self._buf = []
+            live = self.live
+            if live is not None:
+                try: live.live_start()
+                except Exception: live = None
             def cb(indata, frames, t, status):
-                self._buf.append(indata[:, 0].copy())
+                blk = indata[:, 0].copy()
+                self._buf.append(blk)
+                if live is not None:
+                    try: live.live_chunk(blk, SR)
+                    except Exception: pass
             try:
                 self._stream = sd.InputStream(samplerate=SR, channels=1, dtype="float32", device=self.device, callback=cb, blocksize=1024)
                 self._stream.start()
@@ -63,6 +72,9 @@ class Listener:
             s.stop(); s.close()
         except Exception:
             pass
+        if self.live is not None:
+            try: self.live.live_end()
+            except Exception: pass
         audio = np.concatenate(self._buf) if self._buf else np.zeros(1, np.float32)
         if len(audio) < SR * 0.3 or np.abs(audio).max() < 0.01:
             return ""
@@ -91,6 +103,8 @@ class Listener:
             if float(np.mean(np.abs(y) > 0.98)) > 0.05:      # the effect misbehaved: send the plain voice instead
                 y = x
             for tap in list(V.TAPS):
+                if self.live is not None and getattr(tap, "__self__", None) is self.live:
+                    continue                       # ic173: the stream already had it live
                 try:
                     tap(y, OUT, "you")
                 except TypeError:
