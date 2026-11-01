@@ -391,6 +391,7 @@ class Voice:
     def _usable(self, ln, fills):
         """List of clip paths for this variant, or None if it can't be said."""
         clips, spoken, used = [], False, {}
+        last_part = None
         texts, ti = self._texts_of(ln), 0
         for part in ln["parts"]:
             if "fill" in part:
@@ -399,6 +400,15 @@ class Voice:
                 if isinstance(val, (list, tuple)):  # same slot twice in one line, e.g. "[laps] laps, [laps] to go"
                     k = used.get(name, 0); used[name] = k + 1
                     val = val[min(k, len(val) - 1)] if val else None
+                # #708 (2026-10-31): a gap under 2 s said as one whole recorded sentence ("Car ahead one point four.")
+                # instead of "Car ahead" + "one point four" stitched, when that take is recorded and passed the check.
+                if name == "gap" and last_part and clips and clips[-1] == last_part[1]:
+                    w = self._whole_gap(last_part[0], val)
+                    if w:
+                        clips[-1] = w
+                        last_part = None
+                        continue
+                last_part = None
                 c = F.fill_clips(name, val, self.blocks, self)
                 if c is None:
                     return None
@@ -406,6 +416,7 @@ class Voice:
                 clips += c
                 continue
             txt = texts[ti] if ti < len(texts) else ""; ti += 1
+            last_part = None
             if part.get("gtp") and not self.gtp:
                 continue
             if SKIP_PART.search(txt):
@@ -418,7 +429,30 @@ class Voice:
             if self._load(clip) is None:
                 return None
             clips.append(clip); spoken = True
+            last_part = (part["clip"], clip)
         return clips or None
+
+    _whole_ok = None
+
+    def _whole_gap(self, part_clip, val):
+        """#708: library path of the whole-sentence take for this piece + gap (0.1-1.9 s), or None."""
+        try:
+            v = round(float(val), 1)
+        except (TypeError, ValueError):
+            return None
+        if not (0.1 <= v <= 1.9) or not part_clip.startswith("lines/"):
+            return None
+        if self._whole_ok is None:
+            try:
+                st = json.load(open(os.path.join(self.dir, "whole_verified.json"), encoding="utf-8"))
+                self._whole_ok = {k for k, x in st.items() if x == "ok"}
+            except Exception:
+                self._whole_ok = set()
+        jid = "whole/" + part_clip[6:-4] + "__" + f"{v:.1f}"
+        if jid not in self._whole_ok:
+            return None
+        rel = jid + ".wav"
+        return rel if self._load(rel) is not None else None
 
     _TOK = re.compile(r"(\[[^\]]+\]|\{GTP:[^}]*\})")
 
