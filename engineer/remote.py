@@ -51,6 +51,8 @@ class Remote:
         self._tm_last = 0
         from .lap_store import LapStore
         self.laps = LapStore(log=log)            # iPad lap analysis memory, kept across restarts (lap_store.py)
+        from .tracklearn import Live as _TL
+        self.tl = _TL(log=log)                   # ic186 (#729): track learning - runs, banker lap, off / incident marks
         self._places = {"track": None, "stops": [], "t": 0.0}   # 2026-10-25: the lap's named stops + themes, from Grandstand
         self._places_busy = False
         from .aids import Aids
@@ -170,6 +172,14 @@ class Remote:
                         return self._json(remote.api.fx_trace((q.get("sid") or [""])[0], int((q.get("n") or ["0"])[0])))
                     except Exception as e:
                         return self._json({"error": repr(e)})
+                if u.path == "/api/tracklearn":                   # ic186 (#729): the TRACK page (track learning)
+                    if not self._ok(q):
+                        return self._send(403, b"no key", "text/plain")
+                    try:
+                        from . import tracklearn
+                        return self._json(tracklearn.view(remote.laps, remote.tl, getattr(remote.api, "_s", None), log=remote.log))
+                    except Exception as e:
+                        return self._json({"ok": False, "why": repr(e)})
                 if u.path == "/api/state":
                     if not self._ok(q):
                         return self._send(403, b"no key", "text/plain")
@@ -399,6 +409,12 @@ class Remote:
             return
         self.timing.tick(brain)
         self.laps.tick(brain)
+        try:
+            self.tl.tick(brain, self.laps)       # ic186: cheap reads; the lap analysis runs on its own thread
+        except Exception as e:
+            if not getattr(self, "_tl_err", False):
+                self._tl_err = True
+                self.log(f"[track] {e!r}")
         np_ = len(getattr(self.laps, "parts", None) or [])
         if np_ != getattr(self, "_parts_n", np_) or (np_ and (self.laps.parts[0].get("no") != getattr(self, "_parts_top", None))):
             try:                 # 2026-10-28 (#321): a partial lap's sectors were just kept - the iPad list gets them now

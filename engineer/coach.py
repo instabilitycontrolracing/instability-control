@@ -661,6 +661,12 @@ def coach_traces(trM, trR, corners, others=None, ref_info=None, lap_info=None, e
     out = {"version": VERSION, "made": time.strftime("%Y-%m-%d %H:%M:%S"), "lap": lap_info or {}, "ref": ref_info or {},
            "total": None if bad else round(total, 3), "delta_ok": not bad, "delta_note": f"Time gap not shown: {bad}." if bad else None,
            "position": has_pos, "corners": rows, "focus": focus, "lines": lines, "notes": notes}
+    try:                                        # ic186 (#729, T5): coasting, lifts on straights, square braking, min speed
+        from .tracklearn import lap_checks
+        out["checks"] = lap_checks(trM, sorted(corners, key=lambda c: c["start"]), trR)
+    except Exception as e:
+        out["checks"] = None
+        notes.append(f"Extra checks not worked out ({e.__class__.__name__}).")
     out.update(extra or {})
     return _clean(out)
 

@@ -142,6 +142,11 @@ class Settings:
     calls_weather: bool = True       # track / air temperature changes, strong wind
     calls_tyres: bool = True
     calls_fight_coach: bool = True   # in a fight: where the car ahead / behind is quicker, corner by corner, and what to change
+    # ic186 (#729) track learning - every live call is off until Angelo approves its lines (tracklearn.py)
+    calls_track_coach: bool = False  # practice: after the banker lap, one focus corner per lap (max 3 a run)
+    calls_target_pace: bool = False  # practice at race-pace stage: on target / tenths down in a sector
+    calls_brake_cues: bool = False   # practice: the next braking-board step, ~300 m before the corner
+    practice_race_prep: bool = False # treat practice as race prep (Race pace stage) whatever the lap count
     calls_racecraft: bool = True     # striking distance, where to pass/defend, rival trouble, slow car ahead, projected finish...
     race_mode: bool = False          # off by default for new installs (it closes other apps); #353 (2026-10-27): close non-essential apps while the sim runs, reopen them after (racemode.py)
     radio_beep: bool = True          # chirp when the radio button goes down / comes up (2026-10-26)

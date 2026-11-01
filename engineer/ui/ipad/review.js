@@ -243,6 +243,7 @@
   $("pick").addEventListener("change", (e) => { S.sid = e.target.value; S.lap = null; S.scrub = null; S.sig = ""; loop(); });
   $("setup").addEventListener("click", () => nav("setup.html"));
   $("debrief").addEventListener("click", () => nav("debrief.html"));
+  $("track").addEventListener("click", () => nav("learn.html"));          // ic186 (#729): track learning
   $("back").addEventListener("click", () => {
     try { sessionStorage.setItem("re_stay_dash", "1"); } catch (e) {}
     location.href = "./" + (KEY ? "?k=" + encodeURIComponent(KEY) : "");
