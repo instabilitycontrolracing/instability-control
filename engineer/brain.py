@@ -16,6 +16,9 @@ LR_CLEAR, LR_LEFT, LR_RIGHT, LR_BOTH, LR_2LEFT, LR_2RIGHT = 1, 2, 3, 4, 5, 6
 TS_OFF, TS_STALL, TS_APPROACH, TS_ON = 0, 1, 2, 3
 
 
+# ic181 (#709): seconds from "go to the grid" to the formation lap in iRacing races (the log: 129-131 s every time)
+FORM_AFTER_GRID = 130.0
+
 class Settings:
     spotter = True
     gaps = True
@@ -585,6 +588,20 @@ class Brain:
         ps = self.prev.get("state", 0); self.prev["state"] = state
 
         if self.is_race():
+            # ic181 (#709): "one minute / thirty seconds to the formation lap". iRacing gives no pre-race countdown; the
+            # grid call -> formation lap gap has been 2:09-2:11 in every race in the log, so the calls are timed from the
+            # moment the grid opens (only when we saw it open - joining late says nothing).
+            if state == 1 and ps != 1:
+                self._grid_t = self.clock(); self._form_said = set()
+            gt = getattr(self, "_grid_t", None)
+            if gt is not None and state in (1, 2):
+                el = self.clock() - gt
+                for at, sid in ((FORM_AFTER_GRID - 60, "form_1min"), (FORM_AFTER_GRID - 30, "form_30s")):
+                    if at <= el < at + 12 and sid not in self._form_said:
+                        self._form_said.add(sid)
+                        self.say(sid, prio=PRIO_RACE)
+            elif state >= 3:
+                self._grid_t = None
             if state == 3 and ps != 3:
                 self.say("formation", prio=PRIO_RACE)
                 tt = self.g("TrackTempCrew")

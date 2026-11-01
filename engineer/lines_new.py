@@ -6,6 +6,9 @@ tools/vocab_spec.py appends this list when the library is rendered, so the ids s
 """
 
 NEW = [
+    # ---- 2026-10-31 (#709, approved by Angelo: "I okay the formation calls"): pre-race countdown on the grid
+    ("form_1min", "One minute to the formation lap."),
+    ("form_30s", "Thirty seconds to formation. Get ready."),
     # ---- 1 Pit lane
     ("pit_out_behind", "If we box, we come out [P], behind car [car]."),
     ("pit_out_ahead", "If we box, we come out [P], ahead of car [car]."),
