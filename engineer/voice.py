@@ -22,6 +22,13 @@ PRIO_SPOTTER, PRIO_URGENT, PRIO_RACE, PRIO_INFO, PRIO_CHAT = 0, 1, 2, 3, 4
 
 # The one clean "Car." take (checked by speech recognition 2026-10-24); used for every line that opens with "Car".
 CAR_CLIP = "lines/car_inc/v1_1.wav"
+# ic179 (#710, Angelo: "crowd cheers when they say good job ... when i do an overtake ... with respect to its priority
+# level"): good-news calls only (none is ever an urgent call). dB under the voice: the finish loudest, places next,
+# lap times quietest.
+CHEER = {**{k: -11.0 for k in ("finish_good", "finish_points", "finish_gained", "b2_leading_the_class")},
+         **{k: -15.0 for k in ("gained_place", "b2_gained_a_place_in_class", "b2_improved_position", "pit_cycle_undercut")},
+         **{k: -19.0 for k in ("personal_best", "b2_personal_best_in_a_race", "new_fastest", "fastest_class",
+                                "b2_fastest_in_class_summary")}}
 
 
 
@@ -149,7 +156,7 @@ class RadioFX:
     # (radio_f1.py - full voice, open-channel bed from his own F1 recording, compressed, no fizz). False = the old sound.
     F1 = True
 
-    def __call__(self, x, cond=True):
+    def __call__(self, x, cond=True, cheer=None):
         f1 = RadioFX.F1 and np.ndim(x) == 1
         if self.board is None and not f1:
             return x
@@ -163,7 +170,7 @@ class RadioFX:
                     x = x + bed[None, :] * lvl * 0.06
         if f1:
             from . import radio_f1
-            y = radio_f1.process(x, self.sr)
+            y = radio_f1.process(x, self.sr, cheer_db=cheer)
         else:
             y = self.board(x, self.sr)
         c = RadioFX.COND
@@ -559,7 +566,7 @@ class Voice:
                     shown = shown.title().replace("Nascar", "NASCAR")
                 said = said.replace(f"[{k}]", shown, 1)
         k = float(getattr(self, "spot_volume", 1.0) or 0) if sid in SPOT_MAP else 1.0   # ic165: spotter calls in any voice
-        return _loud(self.fx(x), self.volume * k), said
+        return _loud(self.fx(x, cheer=CHEER.get(sid)), self.volume * k), said
 
     # ---------- speaking ----------
     def say(self, sid, fills=None, prio=PRIO_INFO, max_age=None):

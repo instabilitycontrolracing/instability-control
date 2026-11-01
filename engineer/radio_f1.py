@@ -14,9 +14,17 @@ import numpy as np
 SRC = next((p for p in (os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Engineer1", "TVoice chop.mp3"),
                         os.path.join(os.path.expanduser("~"), "Documents", "CrewChiefVoices", "Engineer1", "TVoice chop.mp3"))
             if os.path.exists(p)), "")
-BED_FILE = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "RaceEngineer", "radio_bed_48k.npy")
+# ic179 (#710, Angelo: "that sound in the background is actually the f1 car ... this is sports cars"): the engineer's
+# bed is now the pit stall (his Trackside pit recording, levelled), not the F1 engine. His own mic gets no made-up bed
+# (next: the real game sound playing at that moment).
+_SND = next((d for d in (os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Trackside", "sounds"),
+                         os.path.join(os.path.expanduser("~"), "Documents", "CrewChiefVoices", "Trackside", "sounds"))
+             if os.path.isdir(d)), "")
+PIT_SRC = os.path.join(_SND, "pit_gtp_stop_1.wav")
+CHEERS = [os.path.join(_SND, f) for f in ("cheer_B_short_mid.wav", "cheer_A_short_mid.wav")]
+BED_FILE = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "RaceEngineer", "radio_bed_pit_48k.npy")
 SR_BED = 48000
-BED_DB = -20.0
+BED_DB = -17.0
 _bed = None
 _lock = threading.Lock()
 _sos_cache = {}
@@ -31,8 +39,8 @@ def bed(sr=SR_BED):
             try:
                 if os.path.exists(BED_FILE):
                     _bed = np.load(BED_FILE).astype(np.float32)
-                elif os.path.exists(SRC):
-                    _bed = _make_bed()
+                elif os.path.exists(PIT_SRC):
+                    _bed = _make_pit_bed()
                     os.makedirs(os.path.dirname(BED_FILE), exist_ok=True)
                     np.save(BED_FILE, _bed)
             except Exception:
@@ -43,6 +51,55 @@ def bed(sr=SR_BED):
     if sr != SR_BED:
         b = np.interp(np.linspace(0, len(b) - 1, int(len(b) * sr / SR_BED)), np.arange(len(b)), b).astype(np.float32)
     return b
+
+
+def _load48(path):
+    import soundfile as sf
+    x, s = sf.read(path, dtype="float32", always_2d=True)
+    x = x.mean(1)
+    if s != SR_BED:
+        from scipy.signal import resample_poly
+        x = resample_poly(x, SR_BED, s).astype(np.float32)
+    return x
+
+
+def _make_pit_bed():
+    """ic179: the pit-stall recording with its loud and quiet moments evened out (slow level follower), low rumble cut."""
+    from scipy.signal import butter, sosfilt
+    x = _load48(PIT_SRC)
+    hop = int(SR_BED * 0.05); n = len(x) // hop
+    r = np.sqrt((x[:n * hop].reshape(n, hop) ** 2).mean(1)) + 1e-6
+    r = np.convolve(r, np.ones(40) / 40, "same")
+    g = np.interp(np.arange(len(x)), np.arange(n) * hop + hop / 2, 1 / r)
+    g = np.minimum(g, np.percentile(g, 90))
+    y = sosfilt(butter(2, 150, "highpass", fs=SR_BED, output="sos"), x * g)
+    return (y / (np.sqrt(np.mean(y ** 2)) + 1e-9)).astype(np.float32)
+
+
+_cheers = None
+
+
+def _cheer(sr):
+    """ic179: a crowd cheer (unit RMS, band-limited like a far-off crowd through the radio) or None."""
+    global _cheers
+    with _lock:
+        if _cheers is None:
+            _cheers = []
+            for f in CHEERS:
+                try:
+                    if os.path.exists(f):
+                        from scipy.signal import butter, sosfilt
+                        c = sosfilt(butter(2, [250, 3500], "bandpass", fs=SR_BED, output="sos"), _load48(f))
+                        _cheers.append((c / (np.sqrt(np.mean(c ** 2)) + 1e-9)).astype(np.float32))
+                except Exception:
+                    pass
+        cs = list(_cheers)
+    if not cs:
+        return None
+    c = cs[np.random.default_rng().integers(0, len(cs))]
+    if sr != SR_BED:
+        c = np.interp(np.linspace(0, len(c) - 1, int(len(c) * sr / SR_BED)), np.arange(len(c)), c).astype(np.float32)
+    return c
 
 
 def _make_bed():
@@ -84,7 +141,7 @@ def _comp(x, sr, thresh_db=-24.0, ratio=6.0, rel=0.08):
     return x * g
 
 
-def process(x, sr, bed_db=BED_DB, seed=None, open_bed=True):
+def process(x, sr, bed_db=BED_DB, seed=None, open_bed=True, cheer_db=None):
     """A whole radio clip -> the F1-style radio sound (float32, peak ~0.85)."""
     from scipy.signal import sosfilt
     x = np.asarray(x, np.float32).reshape(-1)
@@ -108,6 +165,18 @@ def process(x, sr, bed_db=BED_DB, seed=None, open_bed=True):
         if f > 0:
             env[:f] = np.linspace(0, 1, f); env[-f:] = np.linspace(1, 0, f)
         y = y + bb * (lvl * 10 ** (bed_db / 20)) * env
+    if cheer_db is not None:                       # ic179: good-news call -> the crowd cheers under it, swelling in
+        c = _cheer(sr)
+        if c is not None:
+            lvl = np.sqrt(np.mean(y[np.abs(y) > 0.05] ** 2)) if np.any(np.abs(y) > 0.05) else 0.2
+            cc = np.resize(c, len(y)) * np.minimum(1.0, np.arange(len(y)) / (0.4 * sr))
+            f = min(int(0.15 * sr), len(y) // 2)
+            if f > 0:
+                cc[-f:] *= np.linspace(1, 0, f)
+            y = y + cc * (lvl * 10 ** (cheer_db / 20))
+    pk = float(np.abs(y).max())
+    if pk > 0.9:                                   # ic179: bring it down rather than clip the voice peaks
+        y = y * (0.88 / pk)
     return np.clip(y, -0.98, 0.98).astype(np.float32)
 
 
@@ -123,7 +192,7 @@ class Stream:
         self.env = 0.0
         self.a = np.exp(-1.0 / (0.08 * sr))
         self.pk = 0.05
-        self.b = bed(sr)
+        self.b = None          # ic179: no bed on his own mic (the F1 engine is gone; the real game sound comes next)
         self.bpos = 0 if self.b is None else int(np.random.default_rng().integers(0, len(self.b)))
 
     def block(self, x):
