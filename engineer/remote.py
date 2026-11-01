@@ -530,6 +530,7 @@ class Remote:
               "poil": r(g("OilPress"), 1), "soc": r(g("EnergyERSBatteryPct"), 4), "map": r((rdc or {}).get("dcThrottleShape") if lv.get("replay") else g("dcThrottleShape"), 2),
               "tyre": g("PlayerTireCompound"), "st": r(g("SessionTime"), 1),
               "lim": bool((g("EngineWarnings", 0) or 0) & 0x10)}
+        wh["tt"] = [r(g(k + "tempM"), 1) for k in ("LF", "RF", "LR", "RR")]   # #719: the GTP screen's tyre temperatures
         try:
             wh["kgl"] = (b.info("DriverInfo", {}) or {}).get("DriverCarFuelKgPerLtr")
         except Exception:

@@ -39,6 +39,39 @@
         ["min", "MIN", 794, 490, 870, 570, "box"],
       ],
     },
+    // #719 (2026-10-31, Angelo sent the wheel shot from his 10-31 race: "that is so you can put that design in the ipad app"):
+    // the BMW M Hybrid V8 EVO's screen, traced box for box from that frame (his recording, 1:29 left, lap 20).
+    // Boxes iRacing sends no number for (BBT, ENT, MID, R LAPS, the brake-temperature rows, MODE, MED) show a dash.
+    gtp: {
+      name: "BMW M HYBRID V8 EVO", box: [445, 66, 975, 448], tp: "#FFFFFF",
+      items: [
+        ["shift", "", 470, 74, 950, 100, "shift", { n: 16 }],
+        ["bbt", "BBT", 455, 138, 497, 190, "cbox", { c: "#D9C51E" }],
+        ["tclon", "TCLON", 503, 138, 547, 190, "cbox", { c: "#D7262B" }],
+        ["ent", "ENT", 551, 138, 595, 190, "cbox", { c: "#2B6BE8" }],
+        ["lapl", "LAP", 606, 140, 662, 162, "lbl", { sm: 1 }],
+        ["rlaps", "R LAPS", 736, 140, 820, 192, "bare"],
+        ["mid", "MID", 825, 138, 867, 190, "cbox", { c: "#3BA43F" }],
+        ["tclat", "TCLAT", 873, 138, 917, 190, "cbox", { c: "#D7262B" }],
+        ["mig", "MIG", 921, 138, 965, 190, "cbox", { c: "#2B6BE8" }],
+        ["ttf", "", 455, 196, 595, 219, "band", { bg: "#1E2FB8" }],
+        ["tp", "", 455, 221, 595, 296, "tp2"],
+        ["ttr", "", 455, 298, 595, 320, "band", { bg: "#1E2FB8" }],
+        ["brk", "", 455, 332, 595, 396, "band4", { bg: "#C21F26" }],
+        ["soc", "SOC", 455, 398, 525, 446, "bare"],
+        ["toil", "TOIL", 527, 398, 595, 446, "bare"],
+        ["gear", "", 670, 198, 748, 280, "gearbox", { bg: "#2F9E35" }],
+        ["spd", "", 636, 282, 784, 326, "num"],
+        ["brkb", "BRKBIAS", 610, 330, 702, 392, "bare"],
+        ["mode", "MODE", 706, 330, 818, 392, "bare"],
+        ["med", "", 668, 398, 752, 440, "box", { ctr: 1 }],
+        ["dlt", "DLT", 820, 272, 966, 318, "dlt"],
+        ["last", "LAST LAP", 820, 320, 966, 358, "bare"],
+        ["best", "BEST LAP", 820, 358, 966, 398, "bare"],
+        ["rarb", "RE", 820, 400, 890, 442, "cbox", { c: "#E6E8EB", side: 1 }],
+        ["farb", "FR", 895, 400, 965, 442, "cbox", { c: "#2B6BE8", side: 1 }],
+      ],
+    },
   };
 
   function pick(full) {
@@ -46,6 +79,7 @@
     if (q) return L[q] ? q : null;
     const s = `${(full && full.car_path) || ""} ${(full && full.car) || ""}`.toLowerCase();
     if (/bmwm4gt3|m4 gt3/.test(s)) return "evo";
+    if (/bmwlmdh|m hybrid v8/.test(s)) return "gtp";        // #719
     return null;
   }
 
@@ -57,6 +91,11 @@
       const pos = `left:${pc(x0, X0, W)};top:${pc(y0, Y0, H)};width:${(((x1 - x0) / W) * 100).toFixed(3)}%;height:${(((y1 - y0) / H) * 100).toFixed(3)}%`;
       const cls = `w-${kind}${ex.sm ? " sm" : ""}${ex.big ? " big" : ""}${ex.ctr ? " ctr" : ""}`;
       if (kind === "tp") h += `<div class="${cls}" data-k="${k}" style="${pos};--tp:${lay.tp}"><b>${lbl}</b><div class="g"><i>–</i><i>–</i><i>–</i><i>–</i></div></div>`;
+      else if (kind === "cbox") h += `<div class="${cls}${ex.side ? " side" : ""}" data-k="${k}" style="${pos};--c:${ex.c}"><b>${lbl}</b><span>–</span></div>`;
+      else if (kind === "band") h += `<div class="${cls}" data-k="${k}" style="${pos};--bg:${ex.bg}"><div class="g"><i>–</i><i>–</i></div></div>`;
+      else if (kind === "band4") h += `<div class="${cls}" data-k="${k}" style="${pos};--bg:${ex.bg}"><div class="g"><i>–</i><i>–</i><i>–</i><i>–</i></div></div>`;
+      else if (kind === "tp2") h += `<div class="w-tp2" data-k="${k}" style="${pos}"><div class="g"><i>–</i><i>–</i><i>–</i><i>–</i></div></div>`;
+      else if (kind === "gearbox") h += `<div class="${cls}" data-k="${k}" style="${pos};--bg:${ex.bg}"><span>–</span></div>`;
       else if (kind === "tile") h += `<div class="${cls}" data-k="${k}" style="${pos};--hd:${ex.hd};--bg:${ex.bg};--fg:${ex.fg || "#fff"}"><b>${lbl}</b><span>–</span></div>`;
       else if (kind === "shift") h += `<div class="${cls}" data-k="${k}" style="${pos}">${"<i></i>".repeat(ex.n)}</div>`;
       else if (kind === "lbl") h += `<div class="${cls}" style="${pos}">${lbl}</div>`;
@@ -113,6 +152,7 @@
     const w = t.wh || {}, met = t.met !== false;
     // tyre pressures: iRacing sends kPa -> bar (metric) or psi
     const tpN = box._w.tp && box._w.tp.querySelectorAll("i");
+    const many = (k, vals) => { const n = box._w[k] && box._w[k].querySelectorAll("i"); if (n) n.forEach((e, i) => { const s = vals[i] ?? "–"; if (e._t !== s) { e._t = s; e.textContent = s; fitText(e, e); } }); };
     if (tpN) (w.tp || []).slice(0, 4).forEach((p, i) => {
       let s = "–";
       if (isNum(p) && p > 0) { const kpa = p < 10 ? p * 100 : p; s = met ? (kpa / 100).toFixed(2) : (kpa * 0.145038).toFixed(1); }
@@ -146,6 +186,21 @@
       const d = t.delta;
       put(box, "gain", isNum(d) ? (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d).toFixed(2) : "–", { cls: isNum(d) ? (d > 0.005 ? "loss" : d < -0.005 ? "gain" : "") : "" });
       shift(box, t, full, w);
+    } else if (id === "gtp") {
+      // #719: the EVO screen. Tyre pressures above are psi with one decimal (bar with two in metric) like the car.
+      const tt = (w.tt || []).map((c) => temp(c));
+      many("ttf", [tt[0], tt[1]]); many("ttr", [tt[2], tt[3]]);
+      many("brk", ["–", "–", "–", "–"]);                       // brake temperatures: iRacing doesn't send them
+      put(box, "bbt", "–"); put(box, "ent", "–"); put(box, "mid", "–"); put(box, "rlaps", "–");
+      put(box, "tclon", setv(t.tc2), { pop: 1 }); put(box, "tclat", setv(t.tc), { pop: 1 }); put(box, "mig", setv(t.mig), { pop: 1 });
+      put(box, "rarb", setv(t.rarb), { pop: 1 }); put(box, "farb", setv(t.farb), { pop: 1 });
+      put(box, "soc", isNum(w.soc) ? String(Math.round(w.soc <= 1.0001 ? w.soc * 100 : w.soc)) : "–");
+      put(box, "mode", "–"); put(box, "med", "–");
+      const d = t.delta;
+      put(box, "dlt", isNum(d) ? (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d).toFixed(2).padStart(5, "0") : "–", { cls: isNum(d) ? (d > 0.005 ? "loss" : d < -0.005 ? "gain" : "") : "" });
+      const lt = (x) => (isNum(x) && x > 0 ? (() => { const m = Math.floor(x / 60), s2 = x - m * 60; return `${String(m).padStart(2, "0")}:${s2.toFixed(2).padStart(5, "0")}`; })() : "–");
+      put(box, "last", lt(t.last)); put(box, "best", lt(t.best));
+      shift(box, t, full, w);
     } else {
       const cv = (x) => (met ? x : x / 3.785);
       // fuel used since fuel was last added: from the moment we see fuel go in (or the stint start in the pits)
@@ -176,8 +231,9 @@
     const lit = Math.max(0, Math.min(half, Math.ceil(f * half)));
     const mode = w.lim ? "lim" : f >= 1 ? "go" : "";
     if (n._m !== mode) { n._m = mode; n.className = "w-shift" + (mode ? " " + mode : ""); }
+    const cols = half > 5 ? ["#3BD33B", "#3BD33B", "#3BD33B", "#F2B322", "#F2B322", "#F2B322", "#F04030", "#F04030"] : COLS;
     for (let i = 0; i < half; i++) {
-      const on = mode ? true : i < lit, c = mode === "lim" ? "#E040E0" : mode === "go" ? "#F04030" : COLS[i];
+      const on = mode ? true : i < lit, c = mode === "lim" ? "#E040E0" : mode === "go" ? "#F04030" : cols[Math.min(i, cols.length - 1)];
       for (const e of [L[i], L[L.length - 1 - i]]) { const bg = on ? c : ""; if (e._c !== bg) { e._c = bg; e.style.background = bg; e.classList.toggle("on", on); } }
     }
   }

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -386,6 +386,25 @@ main { position: relative; z-index: 1; }
 .whl.gtp .w-tp i { font-size: 5cqw; color: #fff; }
 .whl.gtp .w-tile span { font-size: 6.4cqw; }
 .whl.gtp .w-gear span { font-size: 21cqw; } .whl.gtp .w-num span { font-size: 9cqw; }
+/* #719: the M Hybrid V8 EVO screen */
+.whl .w-cbox { border: max(1px, .45cqw) solid var(--c); border-radius: .5cqw; align-items: center; padding: .2cqh 0; }
+.whl .w-cbox b { font: 600 1.9cqw/1 var(--num); color: #E6E8EB; letter-spacing: .02em; white-space: nowrap; }
+.whl .w-cbox span { flex: 1; display: flex; align-items: center; font: 700 6.4cqw/1 var(--num); }
+.whl .w-cbox.side { flex-direction: row; justify-content: space-between; padding: 0 1cqw; } .whl .w-cbox.side b { font-size: 2.2cqw; }
+.whl .w-band, .whl .w-band4 { background: var(--bg); }
+.whl .w-band .g, .whl .w-band4 .g, .whl .w-tp2 .g { flex: 1; display: grid; grid-template-columns: 1fr 1fr; align-items: center; justify-items: center; }
+.whl .w-band i, .whl .w-band4 i, .whl .w-tp2 i { font: 600 3.6cqw/1 var(--num); font-style: normal; color: #E9EAEC; }
+.whl .w-band4 i { font-size: 4.6cqw; } .whl .w-tp2 i { font-size: 5.6cqw; color: #fff; }
+.whl .w-bare b { font: 600 2.4cqw/1 var(--num); color: #C9CDD3; letter-spacing: .03em; text-align: center; white-space: nowrap; }
+.whl .w-bare span { flex: 1; display: flex; align-items: center; justify-content: center; font: 600 5.6cqw/1 var(--num); white-space: nowrap; }
+.whl .w-gearbox { background: var(--bg); align-items: center; justify-content: center; }
+.whl .w-gearbox span { font: 800 15cqw/.8 var(--num); color: #E9EAEC; }
+.whl .w-dlt { background: #2A2D33; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 1cqw; }
+.whl .w-dlt b { font: 600 1.7cqw/1 var(--num); color: #E6E8EB; align-self: flex-start; padding-top: .6cqh; }
+.whl .w-dlt span { font: 700 5.6cqw/1 var(--num); }
+.whl .w-dlt.loss { background: #C21F26; } .whl .w-dlt.gain { background: #2F9E35; }
+.whl.gtp .w-lbl.sm { font-size: 2.2cqw; color: #C9CDD3; }
+.whl.gtp .w-shift i { border-radius: 50%; height: 60%; flex: 0 0 2.6cqw; }
 /* ---- pit + radio ---- */
 .pit { flex-direction: row; gap: 0; padding: 0; }
 .pit .info { width: 32%; display: flex; flex-direction: column; min-width: 0; padding: 0 16px 14px; border-right: 1px solid var(--rule); }
@@ -632,7 +651,7 @@ body.tmmode #timing { display: block; }
   <div class="hair l"></div><div class="hair r"></div>
   <div id="introWatch"></div>
   <div class="i-title">RACE ENGINEER</div>
-  <div class="i-tag">LIVE · PIT WALL</div>
+  <div class="i-tag">LIVE Â· PIT WALL</div>
   <div class="i-step" id="iStep">Connecting</div>
 </div>
 
@@ -649,14 +668,14 @@ body.tmmode #timing { display: block; }
     <div class="zone r">
       <div class="stack" style="align-items:flex-end;gap:5px"><div class="lbl" id="cls">Class</div><span class="chip wait" id="chip"><i></i><span id="chipT">Connecting</span></span></div>
       <div class="seg"><button class="lapbtn" id="tmBtn">TIMING</button><button class="lapbtn" id="lapBtn">LAP ANALYSIS</button><button class="lapbtn" id="fxBtn" onclick="location.href='debrief.html'+location.search">DEBRIEF</button><button class="lapbtn" id="reviewBtn" onclick="location.href='review.html'+location.search">REVIEW</button><button class="lapbtn" id="setupBtn" onclick="location.href='setup.html'+location.search">SETUP</button></div>
-      <div class="pos" id="pos"><small>P</small><span id="posN">–</span><em id="posOf"></em></div>
+      <div class="pos" id="pos"><small>P</small><span id="posN">â€“</span><em id="posOf"></em></div>
     </div>
     <div id="slot"></div>
   </header>
 
   <main>
     <section class="card drive a-drive" style="--i:0">
-      <div class="ph">Driver<span class="meta"><b>RPM</b><span id="rpmV">–</span></span></div>
+      <div class="ph">Driver<span class="meta"><b>RPM</b><span id="rpmV">â€“</span></span></div>
       <div class="tach">
         <div class="leds" id="leds"></div>
         <div class="tscale" id="ticks"></div>
@@ -678,26 +697,26 @@ body.tmmode #timing { display: block; }
       </div>
     </section>
     <section class="card track a-track" style="--i:1">
-      <div class="ph">Live track<span class="meta"><b>LAP</b><span id="lapN2">–</span></span></div>
+      <div class="ph">Live track<span class="meta"><b>LAP</b><span id="lapN2">â€“</span></span></div>
       <div class="mapbox" id="mapbox"><div class="mapth" id="mapTh"></div><div class="tilt"><canvas id="map"></canvas><div class="me" id="meDot"><b id="meN"></b></div></div><img class="mapLabel" id="mapLabel" alt=""></div>
-      <div class="deltarow"><span class="lbl">Delta<br><span style="color:var(--t4);letter-spacing:.12em">vs best</span></span><div class="delta"><div class="sc"></div><i id="dBar"></i></div><span class="dval" id="dTxt">±0.00</span></div>
+      <div class="deltarow"><span class="lbl">Delta<br><span style="color:var(--t4);letter-spacing:.12em">vs best</span></span><div class="delta"><div class="sc"></div><i id="dBar"></i></div><span class="dval" id="dTxt">Â±0.00</span></div>
       <div class="timers">
-        <div class="tm"><div class="lbl">Lap <span id="lapN"></span></div><div class="v" id="cur">–</div></div>
-        <div class="tm" id="lastBox"><div class="lbl">Last</div><div class="v" id="last">–</div></div>
-        <div class="tm best"><div class="lbl">Best</div><div class="v" id="best">–</div></div>
+        <div class="tm"><div class="lbl">Lap <span id="lapN"></span></div><div class="v" id="cur">â€“</div></div>
+        <div class="tm" id="lastBox"><div class="lbl">Last</div><div class="v" id="last">â€“</div></div>
+        <div class="tm best"><div class="lbl">Best</div><div class="v" id="best">â€“</div></div>
       </div>
     </section>
 
     <div class="col a-race">
       <section class="card" style="--i:2"><h4>Gaps</h4>
-        <div class="gaps"><div class="gap" id="gA"><div class="top"><span class="lbl">Ahead</span><span class="n" id="gaN"></span></div><div class="v" id="ga">–</div></div>
-          <div class="gap" id="gB"><div class="top"><span class="lbl">Behind</span><span class="n" id="gbN"></span></div><div class="v" id="gb">–</div></div></div>
+        <div class="gaps"><div class="gap" id="gA"><div class="top"><span class="lbl">Ahead</span><span class="n" id="gaN"></span></div><div class="v" id="ga">â€“</div></div>
+          <div class="gap" id="gB"><div class="top"><span class="lbl">Behind</span><span class="n" id="gbN"></span></div><div class="v" id="gb">â€“</div></div></div>
       </section>
       <section class="card" style="--i:3"><h4>Fuel</h4>
         <div class="fuel"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="fuelGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0CD7E"/><stop offset="1" stop-color="#B8964C"/></linearGradient></defs>
             <circle class="tk" cx="60" cy="60" r="57"/><circle class="bg" cx="60" cy="60" r="50"/><circle class="fg" id="fRing" cx="60" cy="60" r="50"/></svg>
-          <div class="c"><div><span id="fLaps">–</span><small>LAPS</small></div></div></div>
-          <div class="kv"><span>Tank</span><b id="fNow">–</b><span>Per lap</span><b id="fLap">–</b><span>To go</span><b id="ltg">–</b><span>Time left</span><b id="left">–</b></div></div>
+          <div class="c"><div><span id="fLaps">â€“</span><small>LAPS</small></div></div></div>
+          <div class="kv"><span>Tank</span><b id="fNow">â€“</b><span>Per lap</span><b id="fLap">â€“</b><span>To go</span><b id="ltg">â€“</b><span>Time left</span><b id="left">â€“</b></div></div>
         <div class="fspark"><canvas id="fuelSpark"></canvas><span class="fs-l" id="fuelSparkL"></span></div>
       </section>
       <section class="card" style="--i:4"><h4>Car<button class="gbtn" id="guideBtn" title="Your 'My style' setup changes, ticked off as you make them in the garage">Garage guide</button></h4>
@@ -708,7 +727,7 @@ body.tmmode #timing { display: block; }
     <section class="card pit a-pit" id="pitCard" style="--i:5">
       <div class="info">
         <div class="ph">Stint</div>
-        <div class="row"><div class="stat">Laps<b id="sLaps">–</b></div><div class="stat">Best<b id="sBest">–</b></div><div class="stat">Drop-off<b id="sDeg">–</b></div></div>
+        <div class="row"><div class="stat">Laps<b id="sLaps">â€“</b></div><div class="stat">Best<b id="sBest">â€“</b></div><div class="stat">Drop-off<b id="sDeg">â€“</b></div></div>
         <div id="cmps" style="display:flex;flex-direction:column;gap:5px;min-height:0;overflow:hidden;margin-top:12px"></div>
       </div>
       <div class="plan">
@@ -716,7 +735,7 @@ body.tmmode #timing { display: block; }
         <div class="plans" id="sPlans"><span class="pp none">Race plans appear once you've done a long run here</span></div>
         <div class="ctl">
           <button class="b outline" id="pPlan">Plan</button>
-          <div class="fuelset"><button class="b" id="fMinus">−</button><div class="fv"><span id="pFuel">–</span><small id="pFuelU">LITRES</small></div><button class="b" id="fPlus">+</button></div>
+          <div class="fuelset"><button class="b" id="fMinus">âˆ’</button><div class="fv"><span id="pFuel">â€“</span><small id="pFuelU">LITRES</small></div><button class="b" id="fPlus">+</button></div>
           <button class="b" id="pTyres">Tyres</button>
           <button class="b" id="pWs">Tear-off</button>
           <button class="b" id="pFr">Repair</button>
@@ -727,21 +746,21 @@ body.tmmode #timing { display: block; }
           <button class="b gold" id="pSend">Send to car</button>
         </div>
       </div>
-      <div class="sent" id="sent">✓ IN THE PIT MENU</div>
+      <div class="sent" id="sent">âœ“ IN THE PIT MENU</div>
     </section>
 
     <section class="card radio a-radio" style="--i:6"><div class="ph">Radio<button class="listen" id="listen" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="w1" d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path class="w2" d="M18.3 6.5a8 8 0 0 1 0 11"/><path class="x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg><span id="listenT">Listen</span></button></div><div class="feed" id="feed" data-empty="The team's radio appears here"></div></section>
   </main>
   <section id="lap">
     <div class="card top">
-      <div class="cell"><div class="lbl">Live delta</div><div class="ld" id="lapDelta">–</div></div>
-      <div class="cell"><div class="lbl">Lap <span id="lapNo"></span></div><div class="v" id="lapNow">–</div></div>
-      <div class="cell"><div class="lbl">Best</div><div class="v" id="lapBest" style="color:var(--purple)">–</div></div>
+      <div class="cell"><div class="lbl">Live delta</div><div class="ld" id="lapDelta">â€“</div></div>
+      <div class="cell"><div class="lbl">Lap <span id="lapNo"></span></div><div class="v" id="lapNow">â€“</div></div>
+      <div class="cell"><div class="lbl">Best</div><div class="v" id="lapBest" style="color:var(--purple)">â€“</div></div>
       <button class="viewing" id="lapView"><i></i><span id="lapViewT">Live lap</span></button>
-      <div class="secs"><div class="sec" id="lapS1"><span>S1</span><b>–</b></div><div class="sec" id="lapS2"><span>S2</span><b>–</b></div><div class="sec" id="lapS3"><span>S3</span><b>–</b></div></div>
+      <div class="secs"><div class="sec" id="lapS1"><span>S1</span><b>â€“</b></div><div class="sec" id="lapS2"><span>S2</span><b>â€“</b></div><div class="sec" id="lapS3"><span>S3</span><b>â€“</b></div></div>
       <div class="seg" style="padding:3px"><button class="lapbtn" id="lapBack">DASHBOARD</button></div>
     </div>
-    <div class="card mapc"><div class="ph">Track<span class="meta" id="lapMapMeta">tap a corner · drag a section</span></div>
+    <div class="card mapc"><div class="ph">Track<span class="meta" id="lapMapMeta">tap a corner Â· drag a section</span></div>
       <div class="lapwrap"><canvas id="lapMap"></canvas><div class="me" id="lapDot"><b></b></div></div></div>
     <div class="card tr"><div class="ph">Telemetry<span class="meta" id="lapTrMeta">drag across to zoom a section</span></div>
       <div class="lapwrap"><canvas id="lapTrace"></canvas></div></div>
@@ -751,7 +770,7 @@ body.tmmode #timing { display: block; }
     </div>
   </section>
   <section id="timing"></section>
-  <div class="conn" id="conn"><i></i><div><b>Connection to the PC lost</b><span id="connT">Reconnecting…</span></div><button id="connBtn">RETRY</button></div>
+  <div class="conn" id="conn"><i></i><div><b>Connection to the PC lost</b><span id="connT">Reconnectingâ€¦</span></div><button id="connBtn">RETRY</button></div>
   <div class="waiting"><div><b>Waiting for iRacing</b><span id="waitT">Leave the Race Engineer running on the PC</span></div></div>
 </div>
 <script src="ipad.js"></script>
@@ -788,7 +807,7 @@ body.tmmode #timing { display: block; }
 })();
 </script>
 <div id="guide" class="guide"><div class="gbox">
-  <div class="ghead"><div><div class="gtitle">Garage guide · My style</div><div class="gsub" id="guideSub"></div></div><button class="gclose" id="guideClose">Close</button></div>
+  <div class="ghead"><div><div class="gtitle">Garage guide Â· My style</div><div class="gsub" id="guideSub"></div></div><button class="gclose" id="guideClose">Close</button></div>
   <div class="glist" id="guideList"></div>
   <div class="gfoot">Each change turns green by itself when iRacing shows it (garage values update when you click Apply). Tap the ones iRacing doesn't report.</div>
 </div></div>
