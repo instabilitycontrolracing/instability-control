@@ -19,6 +19,9 @@ TS_OFF, TS_STALL, TS_APPROACH, TS_ON = 0, 1, 2, 3
 # ic181 (#709): seconds from "go to the grid" to the formation lap in iRacing races (the log: 129-131 s every time)
 FORM_AFTER_GRID = 130.0
 
+# ic185 (#726): seconds after the green before the spotter starts calling (research: 20-30 s)
+SPOT_START_QUIET_S = 20.0
+
 class Settings:
     spotter = True
     gaps = True
@@ -506,9 +509,9 @@ class Brain:
             nowc = self.clock()
             if busy:
                 self._busy_until = nowc + 0.6
-            self.v.hold(bool(busy) or nowc < getattr(self, "_busy_until", 0) or self.chat_busy())
+            self.v.hold(bool(busy) or nowc < getattr(self, "_busy_until", 0) or self.chat_busy() or self._lap1_quiet())
         else:
-            self.v.hold(self.chat_busy())
+            self.v.hold(self.chat_busy() or self._lap1_quiet())
 
         self.spotter()
         self.flags()
@@ -533,10 +536,29 @@ class Brain:
             if self.once_log("ask", e):
                 self.log(f"[ask] {e!r}")
 
+    def _lap1_quiet(self):
+        """ic185 (#726 / research B4: fewest words when the attention load is highest): from the green until about a
+        third of the first lap (past the first Mulsanne chicane at Le Mans) or 2 minutes, only spotter and urgent calls."""
+        if not self.is_race() or not getattr(self, "green_seen", False) or not getattr(self, "green_t", 0):
+            return False
+        el = self.clock() - self.green_t
+        if el < 0 or el > 120:
+            return False
+        if (self.g("LapCompleted", 0) or 0) >= 2:
+            return False
+        pct = self.g("LapDistPct", 0) or 0
+        return el < 15 or pct < 0.33 or pct > 0.97
+
     # ---------- spotter ----------
     def spotter(self):
         min_ms = max(0.0, float(getattr(self.s, "spot_min_kmh", 30) or 0)) / 3.6
         if not self.s.spotter or self.alone() or self.g("Speed", 0) < max(8.0, min_ms) or self.g("OnPitRoad", False):
+            self.lr_prev = LR_CLEAR
+            self.lr_pend = None
+            return
+        # ic185 (#726 / research C1: iRacing's own spotter and CrewChief wait ~20 s after the green so the start isn't a
+        # flood of calls): no side calls for the first 20 s of a race
+        if self.is_race() and getattr(self, "green_seen", False) and getattr(self, "green_t", 0) and 0 <= self.clock() - self.green_t < SPOT_START_QUIET_S:
             self.lr_prev = LR_CLEAR
             self.lr_pend = None
             return

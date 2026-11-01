@@ -17,8 +17,8 @@ class Settings:
     # calls
     spotter: bool = True
     # spotter timing (2026-10-26, DRE parity): iRacing decides "alongside"; these shape when it's called
-    spot_call_ms: int = 120          # a new car-left / car-right must hold this long before it's called (no flicker chatter)
-    spot_clear_ms: int = 350         # "clear" waits this long, so a wobble at the edge doesn't call clear-then-left again
+    spot_call_ms: int = 60           # a new car-left / car-right must hold this long before it's called (no flicker chatter); ic185: 120 -> 60 (research ~50, never > 100)
+    spot_clear_ms: int = 300         # "clear" waits this long, so a wobble at the edge doesn't call clear-then-left again; ic185: 350 -> 300 (research 200-300)
     spot_still_s: float = 5.0        # "still there" after this long alongside
     spot_min_kmh: int = 30           # quiet below this speed (grid, pit exit crawl)
     gaps: bool = True
