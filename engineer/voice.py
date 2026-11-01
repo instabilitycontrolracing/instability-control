@@ -582,12 +582,56 @@ class Voice:
                     self.player.stop()
             if prio <= PRIO_URGENT:              # also cut the strategist / team voice
                 RADIO.interrupt_below(prio, me=self.player)
+            # ic183 (#715, Angelo: "add the spotter calls to the priority channel we made for the shift beeps and radio
+            # key up out and pit limiter"): a spotter voice call plays straight away on the fast cue channel (~30 ms
+            # cushion, top priority) instead of waiting its turn in the radio queue.
+            if prio == PRIO_SPOTTER and self.spotter and sid in SPOT_MAP and _cue_ready():
+                threading.Thread(target=self._spot_now, args=(sid,), daemon=True, name="spotter-now").start()
+                return
             # ic176 (#697, research: drop stale information rather than queue it - calls piled up in busy moments):
             # spotter 2 s, urgent 30 s, race 20 s, info 12 s, chat 10 s (unless the caller sets its own)
             exp = time.time() + (max_age if max_age else {PRIO_SPOTTER: 2.0, PRIO_URGENT: 30.0, PRIO_RACE: 20.0,
                                                             PRIO_INFO: 12.0}.get(prio, 10.0))
             heapq.heappush(self._q, (prio, next(self._seq), sid, fills or {}, exp))
             self._cv.notify()
+
+    def _spot_now(self, sid):
+        """ic183: build the spotter call and play it on the cue channel at once; the shared radio is held for its length
+        so no other voice talks over it (other voices were already cut off by say())."""
+        try:
+            audio, text = self.build(sid, {})
+            if audio is None:
+                return
+            from . import cues
+            y = np.asarray(audio, np.float32).reshape(-1)
+            if self.sr != cues.SR:
+                y = np.interp(np.linspace(0, len(y) - 1, int(len(y) * cues.SR / self.sr)), np.arange(len(y)), y).astype(np.float32)
+            got = RADIO.take(self.player, PRIO_SPOTTER, timeout=0.25)
+            try:
+                if got:
+                    RADIO.owner = (self.player, PRIO_SPOTTER)
+                for tap in list(TAPS):                       # the TV / stream still get it (same as any radio line)
+                    try:
+                        tap(audio, self.sr)
+                    except Exception:
+                        pass
+                o = cues._out
+                if o is not None and o.ahead() > int(cues.SR * 0.05):
+                    try:
+                        o.cut()                              # an older spotter call still going: the new one replaces it
+                    except Exception:
+                        pass
+                cues.play(y, 1.0, getattr(self, "settings", None))
+                self.log(f"ENGINEER: {text}")
+                if self.on_say:
+                    try: self.on_say(text)
+                    except Exception: pass
+                time.sleep(len(y) / cues.SR + 0.1)
+            finally:
+                if got:
+                    RADIO.give(self.player)
+        except Exception as e:
+            self.log(f"[voice] spotter on the cue channel: {e!r}")
 
     def name_test(self, name, sounds_like=""):
         """#542 Settings > Driver "Hear it": the stand-in voice says the name the way it will on the radio. False when the
@@ -681,6 +725,16 @@ class Voice:
                 self.player.play(audio, prio)
             finally:
                 RADIO.give(self.player)
+
+
+def _cue_ready():
+    """ic183: is the fast cue channel open (cues.py)?"""
+    try:
+        from . import cues
+        o = cues._out
+        return o is not None and o.alive()
+    except Exception:
+        return False
 
 
 class _Radio:
