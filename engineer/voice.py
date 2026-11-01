@@ -532,7 +532,10 @@ class Voice:
                     self.player.stop()
             if prio <= PRIO_URGENT:              # also cut the strategist / team voice
                 RADIO.interrupt_below(prio, me=self.player)
-            exp = time.time() + (max_age if max_age else (2.0 if prio == PRIO_SPOTTER else 30.0))
+            # ic176 (#697, research: drop stale information rather than queue it - calls piled up in busy moments):
+            # spotter 2 s, urgent 30 s, race 20 s, info 12 s, chat 10 s (unless the caller sets its own)
+            exp = time.time() + (max_age if max_age else {PRIO_SPOTTER: 2.0, PRIO_URGENT: 30.0, PRIO_RACE: 20.0,
+                                                            PRIO_INFO: 12.0}.get(prio, 10.0))
             heapq.heappush(self._q, (prio, next(self._seq), sid, fills or {}, exp))
             self._cv.notify()
 

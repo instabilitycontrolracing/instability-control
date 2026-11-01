@@ -239,7 +239,16 @@ class Strategist:
             return
         fuel = self.g("FuelLevel", 0) or 0
         temp = self.g("TrackTempCrew")
-        plans = S.best_plans(m, left, tank, fuel, self.tyre_age, 0.0, temp, lc)
+        # ic176: plans may only ask for the saving he's actually doing (+1 %), rounded up to the planner's 2 % steps
+        try:
+            fl_recent = [x for x in list(getattr(self.b, "fuel_laps", []) or [])[-3:] if x and x > 0]
+            base = float(m.get("fuel_lap") or 0)
+            achieved = max(0.0, (1 - (sum(fl_recent) / len(fl_recent)) / base) * 100) if fl_recent and base > 0 else 0.0
+        except Exception:
+            achieved = 0.0
+        import math as _m
+        max_save = min(8.0, 2.0 * _m.floor((achieved + 1.0) / 2.0))
+        plans = S.best_plans(m, left, tank, fuel, self.tyre_age, 0.0, temp, lc, max_save=max_save)
         if not plans:
             return
         per_tank = tank / m["fuel_lap"]
@@ -264,6 +273,21 @@ class Strategist:
                 rec = max(ok, key=lambda i: (beats[i], -i))
         except Exception:
             pass
+        # ic176 (#697, research - Porsche / Mercedes / Heilmeier: plan before, pick during; a single forecast flips with
+        # noise): COMMIT to the announced plan. Switch only when (a) it no longer makes the finish, (b) a real event
+        # (a caution, new damage, fuel use more than 3 % off what the plan was made on), or (c) the new plan is clearly
+        # better - at least 10 s of race time or a lap. Otherwise keep the committed plan (B / C are tracked silently).
+        forced, event = False, self._event(m)
+        if self.last_sig is not None:
+            cur = next((i for i, o in enumerate(plans) if len(o["res"]["stops"]) == self.last_sig[0]
+                        and float(o["plan"].get("save", 0) or 0) == float(self.last_sig[2] or 0)), None)
+            if cur is None:
+                forced = True                                   # the committed plan doesn't make it any more
+            elif cur != rec and not event:
+                a_, b_ = plans[cur]["res"], plans[rec]["res"]
+                gain = (a_["time"] - b_["time"]) if a_["laps"] == b_["laps"] else (b_["laps"] - a_["laps"]) * 200.0
+                if gain < 10.0:
+                    rec = cur
         self.plans, self.rec = plans, rec
         self.outlook = plans[rec].get("outlook", [])
         r = plans[rec]["res"]
@@ -271,12 +295,14 @@ class Strategist:
         sig = (len(r["stops"]), first["lap"] if first else None, plans[rec]["plan"]["save"])
         if self.last_sig is None:
             self.last_sig = sig
+            self._commit_fl = float(m.get("fuel_lap") or 0)
             self.say_plan(rec, intro="Race plan")
         elif sig[0] != self.last_sig[0] or (sig[1] and self.last_sig[1] and abs(sig[1] - self.last_sig[1]) >= 2) or sig[2] != self.last_sig[2]:
-            # only when the new plan holds for two laps in a row (no flip-flopping on the radio)
-            if self._pending_sig == sig:
-                why = self._why()
+            # only when the new plan holds for two laps in a row (no flip-flopping on the radio) - unless forced / an event
+            if self._pending_sig == sig or forced or event:
+                why = event or ("the old plan doesn't make the finish" if forced else "") or self._why()
                 self.last_sig, self._pending_sig = sig, None
+                self._commit_fl = float(m.get("fuel_lap") or 0)
                 self.say_plan(rec, intro=f"Strategy update{(', ' + why) if why else ''}")
             else:
                 self._pending_sig = sig
@@ -288,6 +314,30 @@ class Strategist:
                 self.speak("ENGINEER", f"You lost {lost:.0f} seconds. Plan {'ABC'[rec]} is still the best one"
                            + (f", you still get the {ahead[0]['num']}." if ahead else "."))
         self.emit({"t": "strat", "s": self.state()})
+
+    def _event(self, m):
+        """ic176: a real reason to change the plan: a caution, new damage, or fuel use > 3 % off the plan's. '' = none."""
+        try:
+            fl_ = int(self.g("SessionFlags", 0) or 0)
+            caution = bool(fl_ & 0x0000C000)
+            if caution and not getattr(self, "_ev_caution", False):
+                self._ev_caution = True
+                return "caution"
+            if not caution:
+                self._ev_caution = False
+            rep = float(self.g("PitRepairLeft", 0) or 0)
+            if rep > 0 and not getattr(self, "_ev_damage", False):
+                self._ev_damage = True
+                return "we have damage"
+            if rep <= 0:
+                self._ev_damage = False
+            c0, c1 = float(getattr(self, "_commit_fl", 0) or 0), float(m.get("fuel_lap") or 0)
+            if c0 > 0 and c1 > 0 and abs(c1 - c0) / c0 > 0.03:
+                self._commit_fl = c1
+                return "fuel use has changed"
+        except Exception:
+            pass
+        return ""
 
     def _why(self):
         lost = getattr(self, "_lost", 0)

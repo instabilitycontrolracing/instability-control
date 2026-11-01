@@ -414,8 +414,11 @@ def simulate(m, plan, race_s, tank, fuel_now, tyre_age=0, elapsed=0.0, temp=None
             out.append({"lap": lap, "fuel": round(add, 1), "tyres": ty, "time": round(st, 1)})
 
 
-def best_plans(m, race_s, tank, fuel_now, tyre_age=0, elapsed=0.0, temp=None, laps_done=0, max_stops=None):
-    """Try the sensible strategies, return the best 3 (most laps, then least time), each a different idea."""
+def best_plans(m, race_s, tank, fuel_now, tyre_age=0, elapsed=0.0, temp=None, laps_done=0, max_stops=None, max_save=8.0):
+    """Try the sensible strategies, return the best 3 (most laps, then least time), each a different idea.
+    ic176 (#697, research: teams never plan on a saving the driver isn't doing): max_save = the most fuel saving (% a
+    lap) any plan may ask for - the strategist passes what the driver is actually achieving. The stop-count floor
+    comes from it too, so an impossible "1 stop" in a 3-stop race is never even tried."""
     fl = m.get("fuel_lap")
     if not fl or not tank:
         return []
@@ -423,11 +426,12 @@ def best_plans(m, race_s, tank, fuel_now, tyre_age=0, elapsed=0.0, temp=None, la
     est_lap = lap_time(m, tank / 2, 5, temp)
     total_laps = math.floor((race_s - elapsed) / est_lap) + 1 + laps_done
     # fewest stops possible with the most fuel saving we'd consider (6 %); the simulation checks each one
-    min_stops = max(0, math.ceil(((total_laps - laps_done) * fl * 0.94 - fuel_now) / tank - 1e-6))
+    ms = max(0.0, min(8.0, float(max_save)))
+    min_stops = max(0, math.ceil(((total_laps - laps_done) * fl * (1 - ms / 100) - fuel_now) / tank - 1e-6))
     hi = min(min_stops + 2, max_stops if max_stops is not None else 9)
     cands = []
     for ns in range(min_stops, hi + 1):
-        for save in (0.0, 2.0, 4.0, 6.0, 8.0):
+        for save in [s_ for s_ in (0.0, 2.0, 4.0, 6.0, 8.0) if s_ <= ms + 1e-6]:
             for tyre_rule in ("none", "all", "alternate"):
                 if ns == 0 and tyre_rule != "none":
                     continue
@@ -445,6 +449,11 @@ def best_plans(m, race_s, tank, fuel_now, tyre_age=0, elapsed=0.0, temp=None, la
                         elif shape == "early":
                             stops[0] = laps_done + max(1, stops[0] - 2)
                         stops[0] = min(stops[0], laps_done + max(1, int(window - 0.3)))
+                        # ic176: when the first stop had to come early, spread the rest evenly from it to the flag
+                        # (they stayed where they were, the last stint ran past a tank and a feasible plan was missed)
+                        if ns > 1:
+                            seg2 = (total_laps - stops[0]) / ns
+                            stops = [stops[0]] + [stops[0] + round(seg2 * i) for i in range(1, ns)]
                         stops = sorted(set(stops))
                     ty = [tyre_rule == "all" or (tyre_rule == "alternate" and i % 2 == 1) for i in range(len(stops))]
                     plan = {"stops": stops, "tyres": ty, "save": save}

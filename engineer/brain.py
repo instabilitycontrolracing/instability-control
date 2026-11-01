@@ -339,15 +339,45 @@ class Brain:
     def corner_here(self):
         return self.c.at(self.g("LapDist", 0)) if self.c else None
 
-    def laps_to_go(self):
+    def _finish(self):
+        """ic176 (#697, research: a timed race ends when the LEADER crosses the line after zero): (times I still cross
+        the line, laps of driving I still have as a fraction) - or None."""
+        me = self.me()
+        pcts = self.g("CarIdxLapDistPct") or []
+        try:
+            mypct = float(pcts[me]) if me is not None and me < len(pcts) and pcts[me] is not None and pcts[me] >= 0 \
+                else float(self.g("LapDistPct", 0) or 0)
+        except (TypeError, ValueError):
+            mypct = 0.0
+        mypct = min(max(mypct, 0.0), 0.999)
         r = self.g("SessionLapsRemainEx", 32767)
         if r is not None and 0 <= r < 32000:
-            return r
+            return int(r), max(0.0, r - mypct)
         t = self.g("SessionTimeRemain", -1)
-        avg = self.pace_est()
-        if t is not None and t > 0 and avg:
-            return int(t / avg) + 1
-        return None
+        mine = self.pace_est()
+        if t is None or t <= 0 or not mine:
+            return None
+        pos = self.g("CarIdxPosition") or []
+        last = self.g("CarIdxLastLapTime") or []
+        lead = next((i for i, p in enumerate(pos) if p == 1), None)
+        lp = last[lead] if lead is not None and lead < len(last) and last[lead] and last[lead] > 0 else mine
+        lpct = pcts[lead] if lead is not None and lead < len(pcts) and pcts[lead] is not None and pcts[lead] >= 0 else mypct
+        l_to_line = (1 - lpct) * lp
+        import math as _m
+        lead_more = max(0, _m.ceil((t - l_to_line) / lp)) if t > l_to_line else 0
+        t_end = l_to_line + lead_more * lp                      # seconds from now until the leader takes the flag
+        my_to_line = (1 - mypct) * mine
+        k = max(0, _m.ceil((t_end - my_to_line) / mine - 1e-6)) if t_end > my_to_line else 0
+        return k + 1, (1 - mypct) + k
+
+    def laps_to_go(self):
+        f = self._finish()
+        return f[0] if f else None
+
+    def fuel_laps_needed(self):
+        """ic176: laps of driving left from exactly where the car is (what the fuel has to cover)."""
+        f = self._finish()
+        return f[1] if f else None
 
     # ---------- what we know from earlier sessions (request 2026-10-23: "take my earlier performances into account") ----------
     def hist(self):
@@ -465,8 +495,15 @@ class Brain:
                 self.later(4, lambda: self.say("quali_start"))
 
         if getattr(self.s, "hold_in_corners", True) and on_track and not self.g("OnPitRoad", False):
-            busy = (self.g("Brake", 0) or 0) > 0.25 or abs(self.g("SteeringWheelAngle", 0) or 0) > 0.35
-            self.v.hold(bool(busy) or self.chat_busy())
+            # ic176 (#697, research - Shovlin / Permane: talk on the straights, never at the brake point or in fast
+            # corners): fast sweepers need little steering, so cornering force counts too; and the hold lasts 0.6 s past
+            # the corner so a call doesn't start on the exit kerb
+            busy = ((self.g("Brake", 0) or 0) > 0.15 or abs(self.g("SteeringWheelAngle", 0) or 0) > 0.35
+                    or abs(self.g("LatAccel", 0) or 0) > 9.0)
+            nowc = self.clock()
+            if busy:
+                self._busy_until = nowc + 0.6
+            self.v.hold(bool(busy) or nowc < getattr(self, "_busy_until", 0) or self.chat_busy())
         else:
             self.v.hold(self.chat_busy())
 
@@ -793,7 +830,8 @@ class Brain:
                         # 2026-10-25 (driver request): name the position, not "car ahead" - "P3 is pitting" - once that line is
                         # recorded (voice queue); until then the existing call (never the stand-in voice)
                         pos = self.class_pos(idx)
-                        if said != "leader_pitting" and pos and "pos_pitting" in getattr(self.v, "lines", {}):
+                        # ic176: the leader too ("P1 is pitting") - the old leader line carried filler ("Flap update when you can")
+                        if pos and "pos_pitting" in getattr(self.v, "lines", {}):
                             ok = self.say("pos_pitting", {"P": pos}, prio=PRIO_RACE, cooldown=40, key=said)
                         else:
                             ok = self.say(said, prio=PRIO_RACE, cooldown=40, key=said)
@@ -930,8 +968,12 @@ class Brain:
                         self.minutes_announced.add(m)
                         # 2026-10-24 (driver request): every minute call asks for a tyre phase + brake shape update;
                         # the answer ("tyres are good", "brakes are fading"...) is handled in racecraft.feedback()
-                        self.say("minutes_ask", {"minutes": m}, prio=PRIO_RACE)
-                        self.feedback_asked = self.clock()
+                        # ic176 (#697, research: no filler on the radio): the plain minutes call - the "tire phase / brake
+                        # shape update when you can" add-on is gone (ask the engineer about the tyres any time)
+                        sid_ = "minutes_left" if "minutes_left" in getattr(self.v, "lines", {}) else "minutes_ask"
+                        self.say(sid_, {"minutes": m}, prio=PRIO_RACE)
+                        if sid_ == "minutes_ask":
+                            self.feedback_asked = self.clock()
                         break
         # ---- last lap, flag-free ----
         if self.prev.get("last_lap_said"):
@@ -1005,6 +1047,9 @@ class Brain:
         per = sum(self.fuel_laps[-4:]) / len(self.fuel_laps[-4:])
         fuel = self.g("FuelLevel", 0) or 0
         have = fuel / per if per > 0 else 99
+        need_ = self.fuel_laps_needed()           # ic176: from where the car is, to the leader's flag
+        if need_ is not None:
+            ltg = need_
         # ic170 (2026-10-31, Angelo: told "fuel for 2 laps, 2 to go, we need lift and coast" with 2.6 laps in the car -
         # he pitted for nothing): good = a quarter of a lap spare (per-lap burn is known to a few tenths of a litre);
         # the laps said are what we HAVE rounded down and what we NEED rounded up, so the numbers always match the call
