@@ -514,7 +514,7 @@ class Racecraft:
         from .extras import play_beep
         ew = int(self.g("EngineWarnings", 0) or 0)
         if (ew & W_LIMITER) and not (self.ew_prev & W_LIMITER) and self.g("IsOnTrack", False):
-            self._beep(1800, 50); self.b.later(0.12, lambda: self._beep(2200, 50))     # limiter on: two quick pips
+            self._cue("limiter")                                                        # limiter on: a rising pair (ic175)
         self.ew_prev = ew
         surf = self.at("CarIdxTrackSurface", self.b.me(), TS_ON)
         plim = self.b.pit_limit_ms() if hasattr(self.b, "pit_limit_ms") else None
@@ -524,7 +524,15 @@ class Racecraft:
             gap = max(0.12, 0.5 - over * 0.02)                 # faster beeps the more you're over
             if now - self.tone_t >= gap:
                 self.tone_t = now
-                self._beep(1200, 45)
+                self._cue("pit_fast")
+
+    def _cue(self, kind):
+        """ic175 (#693/#694): the chime on the high-priority cue channel (volume as before: capped at 0.3)."""
+        try:
+            from . import cues
+            cues.play(cues.sound(kind), min(0.3, float(getattr(self.b.s, "shift_volume", 0.25) or 0.25)), self.b.s)
+        except Exception:
+            self._beep(1800 if kind == "limiter" else 1200, 50)
 
     def _beep(self, hz, ms):
         from .extras import play_beep

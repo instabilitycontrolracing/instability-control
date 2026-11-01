@@ -398,7 +398,7 @@ def main(argv):
             ctrl[BEAT] += 1
 
         stream = sd.OutputStream(samplerate=rate, channels=ch, dtype="float32", device=dev, callback=cb,
-                                 blocksize=1024, latency=latency)
+                                 blocksize=256 if name == "cues" else 1024, latency=latency)   # ic175: cues = 5 ms blocks
         stream.start()
     except Exception:
         ctrl[ERR] = 2

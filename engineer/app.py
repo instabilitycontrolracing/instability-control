@@ -203,6 +203,11 @@ class Api:
             except Exception as e:
                 self._log(f"[recorder] {e!r}")
             self._engine.on_tick = self._tick
+            try:                                               # ic175 (#693): the headset cue channel (shift beep, radio chirps)
+                from . import cues as _cues
+                _cues.start(self._s, log=self._log)
+            except Exception as e:
+                self._log(f"[cues] {e!r}")
             # ic172 (#685): in iRacing's menus (sim not running) keep the crowd ticking so its pit-lane loop plays
             self._engine.on_idle = lambda: (getattr(self, "_crowd", None) and self._crowd.tick(None))
             try:                                               # crowd (2026-10-24): own stream, never the radio

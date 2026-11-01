@@ -1428,6 +1428,13 @@ def play_beep(settings):
         t = np.arange(n) / sr
         edge = max(1, int(sr * 0.006))
         env = np.minimum(1, np.minimum(np.arange(n), n - 1 - np.arange(n)) / edge)
+        # ic175 (#693/#694): the approved struck chime on the high-priority cue channel (1400 on the slider = 988 Hz)
+        try:
+            from . import cues
+            cues.play(cues.sound("shift", hz * 988.0 / 1400.0, ms), vol * 0.89, settings)
+            return
+        except Exception:
+            pass
         x = (vol * np.sin(2 * np.pi * hz * t) * env).astype(np.float32)
         sd.play(x, sr, device=getattr(settings, "device", None) or None, blocking=False)
     except Exception:
@@ -1456,6 +1463,12 @@ def play_radio_click(settings, down=True):
             sq = np.random.default_rng().standard_normal(int(sr * 0.06)) * 0.25
             sq *= np.linspace(1, 0, sq.size) ** 2
             x = np.concatenate([tone(1650, 1150, 80), sq])
+        try:                                            # ic175: the chime pair on the cue channel
+            from . import cues
+            cues.play(cues.sound("radio_down" if down else "radio_up"), vol * 1.5, settings)
+            return
+        except Exception:
+            pass
         sd.play((vol * x).astype(np.float32), sr, device=getattr(settings, "device", None) or None, blocking=False)
     except Exception:
         pass
