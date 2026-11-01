@@ -203,6 +203,8 @@ class Api:
             except Exception as e:
                 self._log(f"[recorder] {e!r}")
             self._engine.on_tick = self._tick
+            # ic172 (#685): in iRacing's menus (sim not running) keep the crowd ticking so its pit-lane loop plays
+            self._engine.on_idle = lambda: (getattr(self, "_crowd", None) and self._crowd.tick(None))
             try:                                               # crowd (2026-10-24): own stream, never the radio
                 from .crowd import Crowd
                 self._crowd = Crowd(self._s, log=self._log, device=self._s.device or None)

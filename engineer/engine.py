@@ -195,6 +195,13 @@ class Engine:
                         try: self.on_tick(None)
                         except Exception: pass
                     self._set_status({"state": "waiting"})
+                # ic172 (#685, 2026-10-31: "can't hear it still"): with the sim not running (iRacing's menus) nothing
+                # ticked the crowd, so an engineer started in the menus never started the pit-lane loop (TV + stream
+                # silent) until the first drive. Now the idle hook runs once a second while waiting.
+                cb = getattr(self, "on_idle", None)
+                if cb:
+                    try: cb()
+                    except Exception: pass
                 time.sleep(1)
                 continue
             if self.brain is None:
