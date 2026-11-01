@@ -368,6 +368,54 @@ class Player:
         self.bed, self.bpos = None, 0
         self.g_feed = self.g_bed = 0.0
         self._bufs(4096)
+        self._game_init()
+
+    # ---- ic182 (#710 part 3, Angelo: "take the game noise from the moment i am driving and talking in to the mic ...
+    # just include whatever game sound is playing at that moment"): GameAudioTap.exe records ONLY iRacing's own sound
+    # (Windows process loopback - not the engineer, crowd or anything else) into a 3 s ring; while he talks, the sound of
+    # that same moment goes under his voice BEFORE the radio, so it sounds like a real onboard radio.
+    GAME_TAP = r"C:\SimRacing\Tools\gameaudio\bin_out\GameAudioTap.exe"
+    GAME_GAIN = 0.22          # about -13 dB of the sim's full level under his voice (the radio compressor evens it out)
+    GAME_LAG = 0.12           # read this far behind the newest game sound (the mic arrives a little late too)
+
+    def _game_init(self):
+        self.game = np.zeros(int(RATE * 3), np.float32); self.game_w = 0; self.game_rd = None; self.game_ok = False
+        if not os.path.exists(self.GAME_TAP):
+            return
+        def run():
+            import subprocess
+            while True:
+                try:
+                    p = subprocess.Popen([self.GAME_TAP], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                         creationflags=0x08000000)
+                    self.log(f"game sound tap started (pid {p.pid})")
+                    n = len(self.game)
+                    while True:
+                        b = p.stdout.read(1920)                 # 10 ms of 48 kHz 16-bit stereo
+                        if not b:
+                            break
+                        a = np.frombuffer(b[:len(b) // 4 * 4], np.int16).reshape(-1, 2).astype(np.float32).mean(1) / 32768.0
+                        w = self.game_w % n; k = min(len(a), n - w)
+                        self.game[w:w + k] = a[:k]
+                        if k < len(a):
+                            self.game[:len(a) - k] = a[k:]
+                        self.game_w += len(a); self.game_ok = True
+                    self.log("game sound tap stopped - restarting in 5 s")
+                except Exception as e:
+                    self.log(f"game sound tap: {e!r}")
+                time.sleep(5)
+        threading.Thread(target=run, daemon=True, name="game-tap").start()
+
+    def _game_take(self, m):
+        """m samples of the sim's sound, in step with his mic (zeros if the tap isn't there)."""
+        if not self.game_ok or self.game_rd is None or m <= 0:
+            return None
+        n = len(self.game)
+        if self.game_w - self.game_rd > n - m or self.game_rd + m > self.game_w:   # fell out of step: re-sync
+            self.game_rd = max(0, self.game_w - int(self.GAME_LAG * RATE) - m)
+        idx = (np.arange(self.game_rd, self.game_rd + m)) % n
+        self.game_rd += m
+        return self.game[idx]
 
     def _bufs(self, n):
         """Work buffers made once (the sound card's callback allocates nothing in the normal case)."""
@@ -530,6 +578,7 @@ class Player:
             self.live.clear(); self.live_n = 0; self.live_play = False; self.live_open = True
             self.live_zi, self.live_prev, self.live_pk = None, 0.0, 0.05
             self.live_f1 = None
+            self.game_rd = max(0, self.game_w - int(self.GAME_LAG * RATE)) if getattr(self, "game_ok", False) else None
             if self.cfg.get("style", "f1") == "f1":
                 try:
                     from . import radio_f1
@@ -553,6 +602,9 @@ class Player:
         xx = np.concatenate([[self.live_prev], x]).astype(np.float32)
         y = np.interp(np.arange(n_out) * (sr / RATE), np.arange(len(xx)), xx).astype(np.float32)
         self.live_prev = float(x[-1])
+        g = self._game_take(len(y))                          # ic182: the sim's own sound of this moment, under his voice
+        if g is not None:
+            y = y + g * float(self.cfg.get("game_gain", self.GAME_GAIN))
         if self.live_f1 is not None:                         # ic177: his voice gets the same F1 radio as the engineer
             y = self.live_f1.block(y) * 10 ** (self.cfg.get("db", 0.0) / 20.0)
             with self.lock:
