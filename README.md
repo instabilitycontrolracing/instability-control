@@ -66,7 +66,7 @@ Only one voice talks at a time. The spotter always goes first, and nobody talks 
 
 ## Getting it
 
-Beta builds will be on the [Releases](../../releases) page. Windows and iRacing for now. I'd love to bring it to other sims later.
+Download the latest beta from the [Releases](../../releases) page. Windows and iRacing for now. I'd love to bring it to other sims later.
 
 ## Found a problem? Got an idea?
 
