@@ -70,7 +70,7 @@ $ApolloFrom = 'https://github.com/ClassicOldSong/Apollo/releases/download/'   # 
 $ApolloWeb  = 'https://localhost:47990'
 
 if (-not $VoicesUrl) {
-    $VoicesUrl = "https://github.com/instabilitycontrol/instability-control/releases/download/$Tag/voices.zip"
+    $VoicesUrl = "https://github.com/instabilitycontrolracing/instability-control/releases/download/$Tag/voices.zip"
 }
 
 # ------------------------------------------------------------------ helpers

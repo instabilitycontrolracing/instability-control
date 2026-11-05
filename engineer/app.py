@@ -23,7 +23,7 @@ try:        # beta (2026-10-24): the release number lives in the VERSION file ne
     VERSION = open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip() or VERSION
 except OSError:
     pass
-REPORT_FORM = "https://github.com/instabilitycontrol/instability-control/issues/new?template=beta_report.yml"
+REPORT_FORM = "https://github.com/instabilitycontrolracing/instability-control/issues/new?template=beta_report.yml"
 UI = os.path.join(HERE, "ui", "index.html")
 
 
@@ -2691,7 +2691,7 @@ class Api:
     def open_url(self, url):
         """Only our own pages (GitHub, Ko-fi, PayPal donate) open from the window."""
         from .series import SCHEDULE_PDF
-        ok = ("https://github.com/instabilitycontrol/", "https://ko-fi.com/instabilitycontrol", "https://www.paypal.com/donate/",
+        ok = ("https://github.com/instabilitycontrol/", "https://github.com/instabilitycontrolracing/", "https://ko-fi.com/instabilitycontrol", "https://www.paypal.com/donate/",
               SCHEDULE_PDF)
         if isinstance(url, str) and url.startswith(ok):
             import webbrowser

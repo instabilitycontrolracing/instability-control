@@ -82,7 +82,7 @@ Running a league or event and want a custom setup, or want to sponsor the projec
 
 ## Also from me
 
-**[Grandstand](https://github.com/instabilitycontrol/grandstand)** gives your iRacing races TV-style broadcast graphics. Track openers, timing tower, story cards, podium. Built in 4K and scales up to 8K and cinema screens. Also free.
+**[Grandstand](https://github.com/instabilitycontrolracing/grandstand)** gives your iRacing races TV-style broadcast graphics. Track openers, timing tower, story cards, podium. Built in 4K and scales up to 8K and cinema screens. Also free.
 
 ## Credits
 
