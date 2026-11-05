@@ -26,7 +26,7 @@
 [CmdletBinding()]
 param(
     [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'Programs\InstabilityControl'),
-    [string]$Tag = 'v0.62.0-beta.1',
+    [string]$Tag = '',   # empty = this copy's own version (VERSION file next to engineer\), e.g. v0.62.0-beta.2
     [string]$VoicesUrl = '',
     [string]$VoicesZip = '',
     [ValidateSet('ask', 'skip', 'vulkan', 'cuda', 'cpu')]
@@ -69,6 +69,12 @@ $ApolloApi  = 'https://api.github.com/repos/ClassicOldSong/Apollo/releases/lates
 $ApolloFrom = 'https://github.com/ClassicOldSong/Apollo/releases/download/'   # every download must start with this
 $ApolloWeb  = 'https://localhost:47990'
 
+# 2026-11-05: the voices come from the release of THIS version (a fixed tag broke installs once that release moved)
+if (-not $Tag) {
+    $Tag = 'v0.62.0-beta.2'
+    $vf = Join-Path $SourceDir 'VERSION'
+    if (Test-Path $vf) { $v = "$(Get-Content $vf -TotalCount 1)".Trim(); if ($v -match '^\d+\.\d+\.\d+') { $Tag = "v$v" } }
+}
 if (-not $VoicesUrl) {
     $VoicesUrl = "https://github.com/instabilitycontrolracing/instability-control/releases/download/$Tag/voices.zip"
 }
@@ -220,7 +226,7 @@ $Version = 'unknown'
 if (Test-Path (Join-Path $SourceDir 'VERSION')) { $Version = "$(Get-Content (Join-Path $SourceDir 'VERSION') -TotalCount 1)".Trim() }
 Say "  Version:       $Version"
 
-$running = Get-AppProcesses
+$running = @(Get-AppProcesses)   # 2026-11-05: @() - an empty result is $null and .Count threw under StrictMode (broke every fresh install)
 if ($running.Count -gt 0) {
     Warn "$AppName is running. Please close it (and its team AI) first."
     if (Ask-YesNo 'Close it now?' $true) {
